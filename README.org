@@ -1,0 +1,10 @@
+#+TITLE: README for tMus
+#+AUTHOR: Dāniels Ponamarjovs
+#+EMAIL: bonux@duck.com
+#+OPTIONS: ':nil toc:nil num:nil author:nil email:nil
+
+* tMus - terminal music player
+
+tMus is a highly customizable music player that was originally inspired by cmus.
+
+The project is in very early state of development, don't expect much.
