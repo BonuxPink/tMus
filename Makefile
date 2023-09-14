@@ -28,7 +28,7 @@ PROGNAME := tMus
 #? Flags, Libraries and Includes
 override REQFLAGS   := -std=c++23
 WARNFLAGS			:= -Wall -Wextra -pedantic -Werror=uninitialized -Werror=shadow -Wnon-virtual-dtor -Wdouble-promotion -Wunused -Wduplicated-cond -Wduplicated-branches -Wnull-dereference -Wconversion -Wno-sign-conversion -Werror -Wdeprecated -Wdeprecated-copy-dtor
-OPTFLAGS			:= -march=native -O2 -DTRACY_ENABLE -D_FORTIFY_SOURCE=2 -fno-omit-frame-pointer -ftree-loop-vectorize
+OPTFLAGS			:= -march=native -O2 -D_FORTIFY_SOURCE=2 -fno-omit-frame-pointer -ftree-loop-vectorize
 LDCXXFLAGS			:= -lnotcurses++ -lnotcurses-core -lfmt -lSDL2 -lavutil -lavformat -lavcodec -lswresample -lavdevice -lswscale -D_GLIBCXX_ASSERTIONS $(ADDFLAGS)
 override CXXFLAGS	+= $(REQFLAGS) $(LDCXXFLAGS) $(OPTFLAGS) $(WARNFLAGS)
 override LDFLAGS	+= $(LDCXXFLAGS) $(OPTFLAGS) $(WARNFLAGS)

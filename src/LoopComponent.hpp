@@ -30,7 +30,7 @@
 class LoopCompontent
 {
 public:
-    using ViewLike = std::variant<CommandView, ListView, StatusView>;
+    using ViewLike = std::variant<CommandView, ListView>;
     LoopCompontent(std::vector<ViewLike>& vec);
 
     void loop(const ncpp::NotCurses& nc);

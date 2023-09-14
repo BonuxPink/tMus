@@ -1,4 +1,4 @@
-#+TITLE: README for tMus
+#+TITLE: tMus
 #+AUTHOR: Dāniels Ponamarjovs
 #+EMAIL: bonux@duck.com
 #+OPTIONS: ':nil toc:nil num:nil author:nil email:nil
