@@ -47,7 +47,6 @@ namespace util
 
         Log(fmt::text_style style, fmt::format_string<Args...>&& fmt, Args&&... args, std::source_location location = std::source_location::current()) noexcept
         {
-            const std::lock_guard lk{ mtx };
             auto micros = std::chrono::time_point(std::chrono::high_resolution_clock::now());
             auto message = fmt::format(style, "[{}:{:03}][{:%H:%M:%S}] ", location.file_name(), location.line(), micros);
             fmt::format_to(std::back_inserter(message), std::forward<fmt::format_string<Args...>>(fmt), std::forward<Args>(args)...);
@@ -66,8 +65,6 @@ namespace util
         {
             Log(fmt::text_style(), std::forward<fmt::format_string<Args...>>(fmt), std::forward<Args>(args)..., std::forward<std::source_location>(location));
         }
-    private:
-        std::mutex mtx{};
     };
 
     // Deduction guides for Log constructors
