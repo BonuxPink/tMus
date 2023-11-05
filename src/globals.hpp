@@ -22,6 +22,8 @@
 #include <atomic>
 #include <condition_variable>
 #include <cstdint>
+#include <ncpp/Plane.hh>
+
 #include "Controls.hpp"
 
 extern "C"
@@ -31,11 +33,8 @@ extern "C"
 
 namespace Globals
 {
-    inline std::int64_t start_time{ AV_NOPTS_VALUE };
-    inline std::int64_t duration{ AV_NOPTS_VALUE };
-    inline std::int64_t audio_callback_time{ 0 };
-    inline std::atomic_bool abort_request{ false };
+    inline std::atomic_bool stop_request{ false };
     inline Completion lastCompletion{};
-
+    inline ncpp::Plane* statusPlane;
     inline Event event;
 }

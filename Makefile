@@ -35,7 +35,7 @@ override LDFLAGS	+= $(LDCXXFLAGS) $(OPTFLAGS) $(WARNFLAGS)
 INC					:= -I$(INCDIR) -I$(SRCDIR)
 
 ifdef DEBUG
-	override OPTFLAGS := -O0 -g3 -fno-omit-frame-pointer -fno-inline
+	override OPTFLAGS := -DDEBUG -O0 -g3 -fno-omit-frame-pointer -fno-inline
 endif
 
 SOURCES := $(wildcard $(SRCDIR)/*.cpp)
@@ -45,7 +45,6 @@ OBJECTS	:= $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.$(OBJEXT))
 
 TEST=tests
 TESTS=$(wildcard $(TEST)/*.cpp)
-# TESTBINS=$(patsubst $(TEST)/%.cpp, $(TEST)/bin/%, $(TESTS))
 TESTBINS=$(patsubst $(TEST)/%.cpp,$(TEST)/bin/%,$(TESTS))
 
 TESTOBJ := $(filter-out $(BUILDDIR)/main.o,$(OBJECTS))
@@ -58,6 +57,9 @@ all: directories objs
 $(TEST)/bin:
 	mkdir -p $@
 
+$(TEST)/obj:
+	mkdir -p $@
+
 $(TEST)/obj/%.o: $(TEST)/%.cpp
 	@printf "Compiling $(CXX) $(CXXFLAGS) into $< -c -o $@ \n"
 	@$(CXX) $(CXXFLAGS) $< -c -o $@
@@ -68,7 +70,7 @@ $(TEST)/bin/%: $(TEST)/obj/%.o $(TESTOBJ)
 	@$(CXX) $< $(TESTOBJ) $(LDFLAGS) -lCatch2Main -lCatch2 -o $@
 	@$(VERBOSE) || @printf "\033[1;92m\033[0G-> \033[1;37m$@ \033[100D\033[38C\033[1;92m(\033[1;97m$$(du -ah $@ | cut -f1)iB\033[1;92m)\033[0m\n"
 
-test: all $(TEST)/bin $(TESTBINS)
+test: all $(TEST)/bin $(TEST)/obj $(TESTBINS)
 	@for test in $(TESTBINS) ; do ./$$test ; done
 
 #? Make the Directories
@@ -81,7 +83,6 @@ clean:
 	@rm -rf $(PROGNAME)
 	@rm -rf "tests/bin"
 	@rm -rf $(BUILDDIR)
-
 
 .ONESHELL:
 objs: $(OBJECTS)
@@ -101,4 +102,4 @@ $(BUILDDIR)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)
 	@printf "\033[1;92m\033[0G-> \033[1;37m$@ \033[100D\033[38C\033[1;92m(\033[1;97m$$(du -ah $@ | cut -f1)iB\033[1;92m)\n"
 
 #? Non-File Targets
-.PHONY: all clean
+.PHONY: all

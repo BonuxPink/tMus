@@ -20,7 +20,6 @@
 #pragma once
 
 #include "ControlManager.hpp"
-#include "Frame.hpp"
 
 #include <memory>
 #include <optional>
@@ -91,32 +90,11 @@ private:
 
 
     selectFunc m_selectionCallback{};                                                          // Called everytime a sellection change has been made
-    enterFunc m_enterCallback{};                                                                // Called when enter is pressed
+    enterFunc m_enterCallback{};                                                               // Called when enter is pressed
 
     unsigned m_selected{};                                                                     // index of selection
     unsigned m_longop{};                                                                       // columns occupied by longest option
     unsigned m_startdisp{};                                                                    // At which element to start the display
-    unsigned m_dimy{};
-    unsigned m_dimx{};
-};
-
-class StatusView : public ncpp::Widget
-{
-public:
-    StatusView(ncpp::Plane,
-               std::shared_ptr<AVFormatContext> format,
-               std::shared_ptr<FrameQueue> fq,
-               std::shared_ptr<AVCodecContext> avctx);
-
-    void draw();
-    bool handle_input(const ncinput&) noexcept;
-
-private:
-    ncpp::Plane m_ncp;
-    std::shared_ptr<AVFormatContext> m_format_ctx;
-    std::shared_ptr<FrameQueue> m_fq;
-    std::shared_ptr<AVCodecContext> m_avctx;
-
     unsigned m_dimy{};
     unsigned m_dimx{};
 };

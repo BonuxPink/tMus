@@ -19,9 +19,11 @@
 
 #pragma once
 
-#include "Factories.hpp"
-#include "globals.hpp"
+#include <ncpp/NotCurses.hh>
+
 #include <mutex>
+
+#include "globals.hpp"
 
 namespace Renderer
 {
@@ -30,9 +32,9 @@ namespace Renderer
     {
         std::scoped_lock lk{ renderMtx };
 
-        if (Globals::abort_request)
+        if (Globals::stop_request)
             return;
 
-        StdPlane::getInstance().getNotCurses().render();
+        ncpp::NotCurses::get_instance().render();
     }
 }

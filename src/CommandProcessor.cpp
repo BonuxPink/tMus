@@ -76,14 +76,10 @@ SearchCommand::SearchCommand(ListView& listView, ListView& songView)
 bool SearchCommand::execute(std::string_view str)
 {
     std::filesystem::path found;
-    int i = 0;
     for (const auto& el : m_ListView.getItems())
     {
-        i++;
-        int j = 0;
         for (const auto& dir : std::filesystem::directory_iterator(el.second))
         {
-            j++;
             if (dir.path().filename().replace_extension().string().find(str) != std::string::npos)
             {
                 found = dir.path();
@@ -141,7 +137,7 @@ bool AddCommand::execute(std::string_view str)
         return false;
     }
 
-    auto&& tmp = Albums(result);
+    auto tmp = Albums(result);
     m_ListView->setItems(std::move(tmp));
     m_ListView->SelectionCallback();
 
