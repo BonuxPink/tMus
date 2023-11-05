@@ -48,13 +48,6 @@ struct ViewHandler final
         return false;
     }
 
-    bool operator ()([[maybe_unused]] StatusView& v)
-    {
-        // Status view does not hav handle_input
-        v.draw();
-        return false;
-    }
-
     bool operator ()(CommandView& v)
     {
         return v.handle_input(m_ni);
@@ -72,33 +65,26 @@ static ncinput GetKeyPress(notcurses* nc)
     ncinput ni;
 
     util::Log(fg(fmt::color::yellow), "----------------------------------\n");
-    while (true)
-    {
-        notcurses_get_blocking(nc, &ni);
-        Start = std::chrono::high_resolution_clock::now();
-        if (ni.evtype == NCTYPE_RELEASE)
-        {
-            util::Log("continue\n");
-            continue;
-        }
 
-        return ni;
-    }
+    notcurses_get_blocking(nc, &ni);
+    Start = std::chrono::high_resolution_clock::now();
+    util::Log("Start: {}\n", Start);
+    return ni;
 }
 
 void LoopCompontent::loop(const ncpp::NotCurses& nc)
 {
-    nc.render();
+    Renderer::Render(); // Initial render
 
     static int count = 0;
-    while (!Globals::abort_request)
+    while (!Globals::stop_request)
     {
         auto input = GetKeyPress(nc.get_notcurses());
-        for (auto& e : m_vec)
+        for (auto& view : m_vec)
         {
-            bool vis = std::visit(ViewHandler{input}, e);
+            bool vis = std::visit(ViewHandler{input}, view);
 
-            if (vis || Globals::abort_request)
+            if (vis || Globals::stop_request)
                 break;
         }
 
