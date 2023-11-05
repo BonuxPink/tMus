@@ -20,7 +20,7 @@
 #include "Factories.hpp"
 #include "Colors.hpp"
 #include "CommandProcessor.hpp"
-#include "Constants.hpp"
+#include "Wrapper.hpp"
 
 #include <memory>
 #include <ncpp/Root.hh>
@@ -86,55 +86,45 @@ CommandProcessor MakeCommandProcessor(ListView& albumView, ListView& songView) n
     return com;
 }
 
-[[gnu::nonnull(1)]]
-std::unique_ptr<SDL_AudioSpec> MakeWantedSpec(AudioLoop* state, AVChannelLayout* layout, int sampleRate)
+std::unique_ptr<SDL_AudioSpec> MakeWantedSpec(int nb_channels)
 {
-    int wantedNbChannels = layout->nb_channels;
-    if (layout->order != AV_CHANNEL_ORDER_NATIVE)
-    {
-        av_channel_layout_uninit(layout);
-        av_channel_layout_default(layout, wantedNbChannels);
-    }
-
     auto wantedSpec = std::make_unique<SDL_AudioSpec>();
 
-    wantedSpec->channels = static_cast<unsigned char>(wantedNbChannels);
-    wantedSpec->freq = sampleRate;
+    wantedSpec->channels = static_cast<unsigned char>(nb_channels);
+    wantedSpec->freq = 48'000;
 
-    if (wantedSpec->freq <= 0 || wantedSpec->channels <= 0)
+    if (wantedSpec->channels <= 0)
     {
-        throw std::runtime_error(fmt::format("Invalid sample rate: {}, channel layout {}", wantedSpec->freq, wantedSpec->channels));
+        throw std::runtime_error(fmt::format("Invalid channel layout {}", wantedSpec->channels));
     }
-
-    static auto* callback = +[](void* opaque, std::uint8_t* stream, int len)
-    {
-        auto* is = std::bit_cast<AudioLoop*>(opaque);
-        is->FillAudioBuffer(stream, len);
-    };
 
     wantedSpec->format = AUDIO_S16SYS;
     wantedSpec->silence = 0;
-    wantedSpec->samples = std::max<unsigned short>(Constants::SDL_AUDIO_MIN_BUFFER_SIZE, 2 << av_log2(wantedSpec->freq / Constants::SDL_AUDIO_MAX_CALLBACKS_PER_SEC));
-    wantedSpec->callback = callback;
-    wantedSpec->userdata = state;
+    wantedSpec->samples = 2048;
+    wantedSpec->callback = nullptr;
+    wantedSpec->userdata = nullptr;
+
+    util::Log("wanted samples: {}, wanted freq: {}\n", wantedSpec->samples, wantedSpec->freq);
 
     return wantedSpec;
 }
 
-ncpp::Plane MakeStatusPlane(ncpp::Plane stdPlane) noexcept
+ncpp::Plane MakeStatusPlane() noexcept
 {
+    const auto stdPlane = Wrap::getStdPlane();
+
     ncplane_options statusOpts
     {
-        .y = static_cast<int>(ncplane_dim_y(stdPlane) - 2),
+        .y = static_cast<int>(ncplane_dim_y(**stdPlane) - 2),
         .x = 0,
         .rows = 1,
-        .cols = stdPlane.get_dim_x(),
+        .cols = stdPlane->get_dim_x(),
         .userptr = nullptr, .name = nullptr,
         .resizecb = nullptr,
         .flags = 0, .margin_b = 0, .margin_r = 0,
     };
 
-    ncpp::Plane statusPlane{ stdPlane, statusOpts, stdPlane.get_notcurses_cpp() };
+    ncpp::Plane statusPlane{ *stdPlane, statusOpts, stdPlane->get_notcurses_cpp() };
     statusPlane.set_base("", 0, Colors::DefaultBackground);
 
     return statusPlane;

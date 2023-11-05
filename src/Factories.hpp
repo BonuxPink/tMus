@@ -19,7 +19,6 @@
 
 #pragma once
 
-#include "AudioLoop.hpp"
 #include "CommandProcessor.hpp"
 #include "CustomViews.hpp"
 
@@ -36,43 +35,14 @@ extern "C"
     #include <libavutil/channel_layout.h>
 }
 
-struct StdPlane
-{
-    static StdPlane& getInstance()
-    {
-        static StdPlane instance;
-        return instance;
-    }
-
-    [[nodiscard]] auto getStdPlane() const { return stdPlane; }
-    [[nodiscard]] auto& getNotCurses() { return nc; }
-
-private:
-    StdPlane()
-        : nc{ opts }
-        , stdPlane{ *nc.get_stdplane() }
-
-    { }
-
-    notcurses_options opts{ .termtype = nullptr,
-                            .loglevel = NCLOGLEVEL_WARNING,
-                            .margin_t = 0, .margin_r = 0,
-                            .margin_b = 0, .margin_l = 0,
-                            .flags = NCOPTION_SUPPRESS_BANNERS /* | NCOPTION_CLI_MODE */,
-    };
-
-    ncpp::NotCurses nc;
-    ncpp::Plane stdPlane;
-};
-
 std::tuple<ncpp::Plane, ncpp::Plane, ncpp::Plane>
 MakePlanes(ncpp::Plane& stdPlane);
 
-ncpp::Plane MakeStatusPlane(ncpp::Plane stdPlane) noexcept;
+ncpp::Plane MakeStatusPlane() noexcept;
 
 CommandProcessor MakeCommandProcessor(ListView&, ListView&) noexcept;
 
 using MakeViewFunc = std::function<ListView::ItemContainer(std::filesystem::path&&)>;
 ListView MakeView(ncpp::Plane&, MakeViewFunc);
 
-std::unique_ptr<SDL_AudioSpec> MakeWantedSpec(AudioLoop* state, AVChannelLayout* layout, int sampleRate);
+std::unique_ptr<SDL_AudioSpec> MakeWantedSpec(int nb_channels);
