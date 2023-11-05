@@ -18,6 +18,7 @@
  */
 
 #include "ControlManager.hpp"
+#include "Renderer.hpp"
 
 #include <utility>
 
@@ -52,6 +53,7 @@ void ControlManager::setFocus(std::shared_ptr<ControlData> ctrl)
     m_LastControl->hasFocus = false;
 
     ctrl->notify();
+    Renderer::Render();
     ctrl->hasFocus = true;
 
     m_LastControl = m_CurrentControl;
