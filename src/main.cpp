@@ -19,7 +19,6 @@
 
 #include "AudioDevice.hpp"
 #include "CustomViews.hpp"
-#include "Decoder.hpp"
 #include "Factories.hpp"
 #include "Frame.hpp"
 #include "globals.hpp"

@@ -29,7 +29,9 @@ struct Event
     {
         UP_VOLUME = 0,
         DOWN_VOLUME,
-        PASUE
+        SEEK_FORWARDS,
+        SEEK_BACKWARDS,
+        PAUSE,
     };
 
     void SetEvent(Action in) noexcept

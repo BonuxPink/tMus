@@ -21,7 +21,6 @@
 #include "Constants.hpp"
 #include "Frame.hpp"
 #include "Wrapper.hpp"
-#include "Decoder.hpp"
 #include "globals.hpp"
 
 #include <array>
