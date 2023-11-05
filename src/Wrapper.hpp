@@ -20,9 +20,13 @@
 #pragma once
 
 #include "util.hpp"
+
 #include <memory>
-#include <SDL2/SDL.h>
 #include <stdexcept>
+#include <new>
+
+#include <SDL2/SDL.h>
+#include <ncpp/NotCurses.hh>
 
 extern "C"
 {
@@ -41,10 +45,10 @@ namespace Wrap
 {
     template <typename T> struct DeleterOf;
 
-    template <> struct DeleterOf<::AVPacket>        { void operator()(::AVPacket* p) { ::av_packet_free(&p); } };
-    template <> struct DeleterOf<::AVFrame>         { void operator()(::AVFrame* f) { ::av_frame_free(&f); } };
+    template <> struct DeleterOf<::AVPacket>        { void operator()(::AVPacket* p)        { ::av_packet_free(&p); } };
+    template <> struct DeleterOf<::AVFrame>         { void operator()(::AVFrame* f)         { ::av_frame_free(&f); } };
     template <> struct DeleterOf<::AVChannelLayout> { void operator()(::AVChannelLayout* p) { ::av_channel_layout_uninit(p); delete p; } };
-    template <> struct DeleterOf<::AVDictionary>    { void operator()(::AVDictionary* p) { ::av_dict_free(&p); } };
+    template <> struct DeleterOf<::AVDictionary>    { void operator()(::AVDictionary* p)    { ::av_dict_free(&p); } };
 
     template <typename T> using UniquePtr = std::unique_ptr<T, DeleterOf<T>>;
 
@@ -60,14 +64,81 @@ namespace Wrap
         return packet;
     }
 
+
+    inline constexpr auto deleter = [](auto* ptr) { operator delete[](ptr, std::align_val_t(16)); };
+    using align_buf_t = std::unique_ptr<std::uint8_t, decltype(deleter)>;
+
+    inline auto make_aligned_buffer()
+    {
+        return align_buf_t
+        {
+            std::bit_cast<std::uint8_t*>(operator new[](192'000 + 16, std::align_val_t(16)))
+        };
+    }
+
     inline auto make_format_context()
     {
         std::shared_ptr<AVFormatContext> formatContext{ avformat_alloc_context(), [](AVFormatContext* ctx)
         {
-            util::Log("Closing AVFormatCTX\n");
             avformat_close_input(&ctx);
         }};
 
         return formatContext;
     }
+
+    struct StdPlaneDeleter
+    {
+        ncpp::Plane* stdPlane;
+
+        StdPlaneDeleter()
+            : stdPlane(ncpp::NotCurses::get_instance().get_stdplane())
+        { }
+
+        ~StdPlaneDeleter() { delete stdPlane; }
+
+        ncpp::Plane* operator->() const
+        {
+            return stdPlane;
+        }
+
+        ncpp::Plane* operator*() const
+        {
+            return stdPlane;
+        }
+    };
+
+    inline auto getStdPlane()
+    {
+        return StdPlaneDeleter{};
+    }
+
+    struct MyAvPacket
+    {
+        MyAvPacket(const auto) = delete;
+        MyAvPacket()
+        {
+            if (av_new_packet(&pkt, 0) != 0)
+            {
+                throw std::runtime_error("av_new_packet failed");
+            }
+        }
+
+        ~MyAvPacket()
+        {
+            av_packet_unref(&pkt);
+        }
+
+        [[nodiscard]] AVPacket* get() noexcept
+        {
+            return &pkt;
+        }
+
+        const AVPacket* operator->() noexcept
+        {
+            return &pkt;
+        }
+
+    private:
+        AVPacket pkt{};
+    };
 }
