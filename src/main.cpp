@@ -18,13 +18,15 @@
  */
 
 #include "AudioDevice.hpp"
+#include "AudioLoop.hpp"
+#include "Colors.hpp"
 #include "CustomViews.hpp"
 #include "Factories.hpp"
-#include "Frame.hpp"
-#include "globals.hpp"
 #include "LoopComponent.hpp"
+#include "StatusView.hpp"
+#include "Wrapper.hpp"
+#include "globals.hpp"
 #include "util.hpp"
-#include "Colors.hpp"
 
 #include <SDL2/SDL_audio.h>
 #include <cstdio>
@@ -46,16 +48,12 @@ extern "C"
     #include <libavutil/channel_layout.h>
 }
 
-int main()
+static void init_logger()
 {
     int fd = open("/tmp/log.txt", O_CREAT | O_APPEND | O_WRONLY, 0644);
     util::Log<void>::setFd(fd);
 
-    if (setlocale(LC_ALL, "en_US.utf8") == nullptr)
-    {
-        return EXIT_FAILURE;
-    }
-
+#if 0
     auto cb = +[]([[maybe_unused]] void* avcl, [[maybe_unused]] int level, const char* fmt, va_list args)
     {
         std::array<char, 1024> buf{0};
@@ -71,47 +69,30 @@ int main()
 
     };
 
-    av_log_set_level(AV_LOG_WARNING);
+    av_log_set_level(AV_LOG_ERROR);
     av_log_set_callback(cb);
+#else
+    /*
+     * Just be really quiet.
+     */
+    av_log_set_level(AV_LOG_QUIET);
+    auto cb = +[]([[maybe_unused]] void*,
+                  [[maybe_unused]] int,
+                  [[maybe_unused]] const char*,
+                  [[maybe_unused]] va_list)
+    { };
+    av_log_set_callback(cb);
+#endif
+}
 
-    {
-        if (!SDL_getenv("SDL_AUDIO_ALSA_SET_BUFFER_SIZE"))
-            SDL_setenv("SDL_AUDIO_ALSA_SET_BUFFER_SIZE", "1", 1);
-
-        int flags = SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_AUDIO;
-        if (SDL_Init(flags))
-        {
-            util::Log("{}\n", SDL_GetError());
-            return EXIT_FAILURE;
-        }
-    }
-
-    auto stdPlane = StdPlane::getInstance().getStdPlane();
-    stdPlane.set_base("", 0, Colors::DefaultBackground);
-    auto [albumPlane, songPlane, commandPlane] = MakePlanes(stdPlane);
-
-    auto albumViewFocus = std::make_shared<Control>();
-    auto songViewFocus = std::make_shared<Control>();
-    auto manager = std::make_shared<ControlManager>(albumViewFocus, songViewFocus);
-
-    std::vector<LoopCompontent::ViewLike> views;
-    views.push_back( CommandView { commandPlane });
-    views.push_back( ListView    { albumPlane, albumViewFocus });
-    views.push_back( ListView    { songPlane, songViewFocus });
-
-    auto& cmdViewRef = std::get<CommandView>(views[0]);
-    auto& albumViewRef = std::get<ListView>(views[1]);
-    auto& songViewRef = std::get<ListView>(views[2]);
-
-    albumViewFocus->setNotify([&](){ util::Log("+++\n"); albumViewRef.ColorSelected(); StdPlane::getInstance().getNotCurses().render(); });
-    songViewFocus->setNotify([&](){ util::Log("----\n"); songViewRef.ColorSelected(); StdPlane::getInstance().getNotCurses().render(); });
-
+static void SetupCallbacks(ListView& albumViewRef, ListView& songViewRef)
+{
     albumViewRef.setSelectCallback([&songViewRef](const std::filesystem::path& path)
     {
         std::vector<ListView::ItemType> songVec;
         for (const auto& file : std::filesystem::directory_iterator(path))
         {
-            auto ext = file.path().extension();
+            const auto ext = file.path().extension();
             if (ext == ".cue" || ext == ".jpg" || ext == ".png" || ext == ".m3u")
                 continue;
 
@@ -126,88 +107,104 @@ int main()
 
     songViewRef.setEnterCallback([&](const std::filesystem::path& path)
     {
-        auto starter = [&, p = path](std::stop_token tkn)
+        auto starter = [audio_path = path](std::stop_token tkn)
         {
-            auto packetQueue = std::make_shared<PacketQueue>();
-            auto frameQueue = std::make_shared<FrameQueue>(&packetQueue->abort_request);
-
-            AudioLoop state{ p, packetQueue, frameQueue };
-
-            std::shared_ptr<AVCodecContext> avctx;
             try
             {
-                avctx = state.streamOpen();
+                AudioLoop state{ audio_path };
+                StatusView::Create(state.getFormatCtx(), state.getCodecContext());
+                state.consumer_loop(tkn);
             }
             catch (const std::runtime_error& e)
             {
-                util::Log("Runtime: {}\n", e.what());
-                throw;
+                util::Log(fg(fmt::color::red), "Runtime error: {}", e.what());
             }
-
-            int sampleRate = avctx->sample_rate;
-            AVChannelLayout layout{};
-            int ret = av_channel_layout_copy(&layout, &avctx->ch_layout);
-            if (ret < 0)
+            catch (const std::exception& e)
             {
-                throw std::runtime_error("Failed to copy layout with ret");
-            }
-
-            util::Log(fg(fmt::color::teal), "sample rate: {}, ret {}\n", sampleRate, ret);
-            AudioDevice device{ MakeWantedSpec(&state, &layout, sampleRate), &layout };
-            state.audioSrc = device.getParams();
-            state.audioTgt = device.getParams();
-
-            Decoder dec{ avctx, packetQueue, state.getCv() };
-
-            auto StatusThread = [&](std::stop_token statusTok)
-            {
-                StatusView statusView{ MakeStatusPlane(stdPlane), state.getFormatCtx(), frameQueue, avctx };
-                using namespace std::chrono_literals;
-
-                while (statusTok.stop_requested() != true && Globals::abort_request != true)
-                {
-                    statusView.draw();
-                    std::this_thread::sleep_for(1s);
-                }
-            };
-
-            std::jthread statusTh = std::jthread{ StatusThread };
-            pthread_setname_np(statusTh.native_handle(), "statusThread");
-
-            try
-            {
-                dec.start(frameQueue.get());
-                state.loop(tkn);
-                dec.abort(*frameQueue.get());
-            }
-            catch (const std::invalid_argument& e)
-            {
-                util::Log(fg(fmt::color::red), "Invalid: {}\n", e.what());
+                util::Log(fg(fmt::color::red), "Exception: ", e.what());
             }
             catch (...)
             {
-                util::Log(fg(fmt::color::red), "Catch All\n");
+                util::Log(fg(fmt::color::red), "Unhandled exception caught\n");
             }
         };
 
         if (playbackThread.joinable())
         {
-            SDL_PauseAudioDevice(2, 1);
             playbackThread.request_stop();
-            util::Log(fg(fmt::color::yellow), "Requested stop, now waiting\n");
             playbackThread.join();
         }
 
         playbackThread = std::jthread{ starter };
+        pthread_setname_np(playbackThread.native_handle(), "Main loop");
 
         return true;
     });
+}
+
+int main()
+{
+    init_logger();
+
+    if (setlocale(LC_ALL, "en_US.utf8") == nullptr)
+    {
+        util::Log("Could not set locale to en_US.utf8\n");
+        return EXIT_FAILURE;
+    }
+
+    if (!SDL_getenv("SDL_AUDIO_ALSA_SET_BUFFER_SIZE"))
+        SDL_setenv("SDL_AUDIO_ALSA_SET_BUFFER_SIZE", "1", 1);
+
+    if (SDL_Init(SDL_INIT_AUDIO))
+    {
+        util::Log("{}\n", SDL_GetError());
+        return EXIT_FAILURE;
+    }
+
+    notcurses_options opts{ .termtype = nullptr,
+                            .loglevel = NCLOGLEVEL_WARNING,
+                            .margin_t = 0, .margin_r = 0,
+                            .margin_b = 0, .margin_l = 0,
+                            .flags = NCOPTION_SUPPRESS_BANNERS | NCOPTION_CLI_MODE,
+    };
+
+    ncpp::NotCurses nc{ opts };
+
+    auto statusPlane = MakeStatusPlane();
+    Globals::statusPlane = &statusPlane;
+
+    const auto stdPlane = Wrap::getStdPlane();
+    stdPlane->set_base("", 0, Colors::DefaultBackground);
+
+    auto [albumPlane, songPlane, commandPlane] = MakePlanes(**stdPlane);
+
+    const auto albumViewFocus = std::make_shared<Control>();
+    const auto songViewFocus  = std::make_shared<Control>();
+    const auto manager        = std::make_shared<ControlManager>(albumViewFocus, songViewFocus);
+
+    std::vector<LoopCompontent::ViewLike> views;
+    views.push_back( CommandView { commandPlane });
+    views.push_back( ListView    { albumPlane, albumViewFocus });
+    views.push_back( ListView    { songPlane, songViewFocus });
+
+    auto& cmdViewRef   = std::get<CommandView>(views[0]);
+    auto& albumViewRef = std::get<ListView>(views[1]);
+    auto& songViewRef  = std::get<ListView>(views[2]);
+
+    albumViewFocus->setNotify([&](){ albumViewRef.ColorSelected(); });
+    songViewFocus->setNotify([&]() { songViewRef.ColorSelected(); });
+
+    SetupCallbacks(albumViewRef, songViewRef);
 
     auto cmdProcessor = MakeCommandProcessor(albumViewRef, songViewRef);
     cmdViewRef.init(&cmdProcessor);
 
+#ifdef DEBUG
+    cmdProcessor.processCommand("add ~/Music");
+#endif
+
     LoopCompontent loop{ views };
-    loop.loop(StdPlane::getInstance().getNotCurses());
+    loop.loop(nc);
 
     if (playbackThread.joinable())
     {
@@ -215,5 +212,7 @@ int main()
     }
 
     util::Log(fg(fmt::color::green), "Program exiting\n");
+    SDL_Quit();
+    SDL_TLSCleanup();
     return EXIT_SUCCESS;
 }
