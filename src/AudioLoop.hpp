@@ -20,7 +20,6 @@
 #pragma once
 
 #include "Frame.hpp"
-#include "Timing.hpp"
 #include "AudioParams.hpp"
 
 #include <atomic>
@@ -69,7 +68,6 @@ private:
     SwrContext* swr_ctx{};
 
     std::atomic_bool paused{};
-    Timing m_timing;
 
 public:
     AudioParams audioSrc{};

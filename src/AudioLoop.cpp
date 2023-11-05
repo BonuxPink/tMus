@@ -98,7 +98,6 @@ AudioLoop::AudioLoop(const std::filesystem::path& path, std::shared_ptr<PacketQu
     : m_format_ctx(Wrap::make_format_context())
     , m_packetQ(std::move(audioq))
     , m_frameQ(std::move(fq))
-    , m_timing(1)
 {
     m_format_ctx->interrupt_callback.callback = decode_interrput_cb;
     m_format_ctx->interrupt_callback.opaque = nullptr;
@@ -177,11 +176,8 @@ void AudioLoop::togglePause()
 {
     if (paused)
     {
-        m_timing.audioclk.set_clock(m_timing.audioclk.get_clock(), m_timing.audioclk.serial);
     }
 
-    m_timing.extclk.set_clock(m_timing.extclk.get_clock(), m_timing.extclk.serial);
-    paused = m_timing.audioclk.paused = m_timing.extclk.paused = !paused;
 }
 
 int AudioLoop::decodeFrame()
@@ -329,8 +325,6 @@ void AudioLoop::FillAudioBuffer(std::uint8_t* stream, int len)
     {
         const double audioWriteBufSize = m_audioBufSize - m_audioBufIndex;
         const double pts = m_audioClock - (2 * m_audiohwBufSize + audioWriteBufSize) / audioTgt.bytes_per_sec;
-        m_timing.audioclk.set_clock_at(pts, /* serial = */1, static_cast<double>(Globals::audio_callback_time) / 100'0000.0);
-        m_timing.audioclk.sync_clock_to_slave(m_timing.extclk);
     }
 }
 
