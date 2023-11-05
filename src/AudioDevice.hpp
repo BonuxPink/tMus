@@ -19,8 +19,6 @@
 
 #pragma once
 
-#include "AudioParams.hpp"
-
 #include <SDL2/SDL_audio.h>
 
 #include <condition_variable>
@@ -34,28 +32,14 @@ extern "C"
 
 struct AudioDevice
 {
-    AudioDevice(const auto) = delete;
+    AudioDevice() = default;
     explicit AudioDevice(std::unique_ptr<SDL_AudioSpec> wanted, AVChannelLayout* layout);
     ~AudioDevice();
 
-    [[nodiscard]] const SDL_AudioSpec& getSpec() const { return spec; }
-    [[nodiscard]] const AudioParams& getParams() const { return params; }
+    AudioDevice& operator=(const AudioDevice&) = default;
 
-private:
-    void setupParams(AVChannelLayout* wantedLayout);
-
-    SDL_AudioSpec spec{};
+    SDL_AudioSpec actual{};
     SDL_AudioDeviceID audioDeviceID{};
-
-    AudioParams params{};
-
-    double audioDiffThreshold{};
-
-    int audioHwBufSize{};
-    int audioBufSize{};
-    unsigned audioBufIndex{};
-    int audioDuffAvgCount{};
-
 };
 
 inline std::jthread playbackThread{};
