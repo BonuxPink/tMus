@@ -134,6 +134,7 @@ bool CommandView::handle_input(const ncinput& ni) noexcept
             ProcessCommand(u32vecToString(m_commandBuffer));
             Globals::lastCompletion.clear();
             return true;
+            break;
         default:
             m_commandBuffer.emplace_back(ni.id);
             break;

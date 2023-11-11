@@ -17,7 +17,7 @@
  * along with tMus. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "Colors.hpp"
+#include "Factories.hpp"
 #include "Renderer.hpp"
 #include "globals.hpp"
 #include "Colors.hpp"
@@ -123,8 +123,7 @@ bool ListView::handle_input(const ncinput& input) noexcept
 {
     if (input.id == 'q')
     {
-        Globals::abort_request = true;
-        SDL_Quit();
+        Globals::stop_request = true;
         return true;
     }
 
@@ -145,17 +144,13 @@ bool ListView::handle_input(const ncinput& input) noexcept
 
     else if (input.id == NCKEY_RIGHT)
     {
-        int dimy = 0, dimx = 0;
-        m_ncp.get_yx(dimy, dimx);
-        m_ncp.move(dimy, dimx + 1);
+        Globals::event.SetEvent(Event::Action::SEEK_FORWARDS);
         return true;
     }
 
     else if (input.id == NCKEY_LEFT)
     {
-        int dimy = 0, dimx = 0;
-        m_ncp.get_yx(dimy, dimx);
-        m_ncp.move(dimy, dimx - 1);
+        Globals::event.SetEvent(Event::Action::SEEK_BACKWARDS);
         return true;
     }
 
@@ -175,8 +170,7 @@ bool ListView::handle_input(const ncinput& input) noexcept
 
     else if (input.id == NCKEY_SPACE)
     {
-        util::Log(fg(fmt::color::cadet_blue), "SPACE\n");
-        Globals::event.SetEvent(Event::Action::PASUE);
+        Globals::event.SetEvent(Event::Action::PAUSE);
         return true;
     }
 
@@ -234,7 +228,7 @@ void ListView::SelectPrevitem()
         return;
     }
 
-    unsigned dimy, dimx;
+    unsigned dimy{}, dimx{};
     m_ncp.get_dim(dimy, dimx);
 
     if (m_startdisp > 0 && m_selected - m_startdisp < 3)
@@ -471,91 +465,4 @@ bool customSelectCallback(ListView& albumView, std::filesystem::path&& path)
 
 
     return true;
-}
-
-StatusView::StatusView(ncpp::Plane plane,
-                       std::shared_ptr<AVFormatContext> format,
-                       std::shared_ptr<FrameQueue> fq,
-                       std::shared_ptr<AVCodecContext> avctx)
-    : ncpp::Widget(ncpp::Utilities::get_notcurses_cpp(plane))
-    , m_ncp(plane)
-    , m_format_ctx(std::move(format))
-    , m_fq(std::move(fq))
-    , m_avctx(std::move(avctx))
-{
-    ncpp::Widget::ensure_valid_plane(plane);
-    ncpp::Widget::take_plane_ownership(plane);
-}
-
-
-bool StatusView::handle_input([[maybe_unused]] const ncinput& ni) noexcept
-{
-    return false;
-}
-
-void StatusView::draw()
-{
-    if (!m_format_ctx)
-        return;
-
-    m_ncp.get_dim(m_dimy, m_dimx);
-
-    ncpp::Cell transchar{};
-    m_ncp.set_channels((std::uint64_t)ncchannels_bchannel(Colors::StatusTextColor) << 32u | ncchannels_fchannel(Colors::StatusTextColor));
-
-    m_ncp.cursor_move((int)m_dimy - 1, 0);
-    m_ncp.hline(transchar, m_dimx - 1);
-    m_ncp.cursor_move((int)m_dimy - 1, 0);
-
-    auto frame = m_fq->getStatusViewData();
-
-    auto secondsToTime = [](int seconds)
-    {
-        int hours = seconds / 360;
-        int minutes = (seconds / 60) % 60;
-        int secs = seconds % 60;
-
-        if (hours < 1)
-        {
-            return fmt::format("{:02}:{:02}", minutes, secs);
-        }
-        else
-        {
-            return fmt::format("{:02}:{:02}:{:02}", hours, minutes, secs);
-        }
-    };
-
-    auto frameDuration = static_cast<double>(frame.nb_samples) / static_cast<double>(frame.sample_rate);
-    auto currentSecond = std::floor(frame.pts + frameDuration);
-
-    if (std::isnan(currentSecond))
-    {
-        currentSecond = 0;
-    }
-
-    auto durationStr = secondsToTime(static_cast<int>(m_format_ctx->duration / AV_TIME_BASE));
-    auto currentSecondStr = secondsToTime(static_cast<int>(currentSecond));
-
-    std::string_view url{ m_format_ctx->url };
-    auto pos = url.find_last_of('/');
-
-    std::string filename = fmt::format("{} > {} / {}", m_format_ctx->url, currentSecondStr, durationStr);
-    filename.erase(0, pos + 1);
-
-    const auto* cStr = filename.c_str();
-
-    std::size_t sizeInBytes{ 0 };
-    while (*cStr)
-    {
-        int cols = ncplane_putegc_yx(m_ncp.to_ncplane(), -1, -1, cStr, &sizeInBytes);
-        cStr += sizeInBytes;
-
-        if (cols < 0)
-            break;
-
-        if (sizeInBytes == 0)
-            break;
-    }
-
-    Renderer::Render();
 }
