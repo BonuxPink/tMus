@@ -1,4 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
+#include <ncpp/NotCurses.hh>
+#include <notcurses/notcurses.h>
 #include <utility>
 
 #include <fmt/core.h>
@@ -43,6 +45,15 @@ TEST_CASE ( "manager", "[Controller]" )
 
 TEST_CASE ( "Multifocus", "[Controller]" )
 {
+    notcurses_options opts{ .termtype = nullptr,
+                            .loglevel = NCLOGLEVEL_WARNING,
+                            .margin_t = 0, .margin_r = 0,
+                            .margin_b = 0, .margin_l = 0,
+                            .flags = NCOPTION_SUPPRESS_BANNERS | NCOPTION_CLI_MODE,
+    };
+
+    ncpp::NotCurses nc{ opts };
+
     auto X = std::make_shared<Control>(stub, nullptr, true);
     auto Y = std::make_shared<Control>(stub, nullptr);
 
@@ -62,6 +73,15 @@ TEST_CASE ( "Multifocus", "[Controller]" )
 
 TEST_CASE ( "focus", "[Controller]" )
 {
+    notcurses_options opts{ .termtype = nullptr,
+                            .loglevel = NCLOGLEVEL_WARNING,
+                            .margin_t = 0, .margin_r = 0,
+                            .margin_b = 0, .margin_l = 0,
+                            .flags = NCOPTION_SUPPRESS_BANNERS | NCOPTION_CLI_MODE,
+    };
+
+    ncpp::NotCurses nc{ opts };
+
     auto X = std::make_shared<Control>(func, nullptr);
     auto Y = std::make_shared<Control>(last, nullptr);
 
