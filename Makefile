@@ -91,7 +91,7 @@ objs: $(OBJECTS)
 	@$(VERBOSE) || printf "$(CXX) -o $(PROGNAME) $^ $(LDFLAGS)\n"
 	@$(CXX) -o $(PROGNAME) $^ $(LDFLAGS) || exit 1
 	@printf "> \033[1;37mtMus \033[100D\033[38C\033[1;93m(\033[1;97m$$(du -ah $(PROGNAME) | cut -f1)iB\033[1;93m) \033[92m\n"
-	@printf "\n\033[1;92mBuild complete in \033[92m(\033[97m$$($(DATE_CMD) -d @$$(expr $$(date +%s 2>/dev/null || echo "0") - $(TIMESTAMP) 2>/dev/null) -u +%Mm:%Ss 2>/dev/null | sed 's/^00m://' || echo "unknown")\033[92m)\033[0m\n"
+	@printf "\n\033[1;92mBuild complete in \033[92m(\033[97m$$($(DATE_CMD) -d @$$(expr $$(date +%s 2>/dev/null || echo "0") - \$(TIMESTAMP) 2>/dev/null) -u +%Mm:%Ss 2>/dev/null | sed 's/^00m://' || echo "unknown")\033[92m)\033[0m\n"
 
 #? Compile
 .ONESHELL:
