@@ -19,13 +19,16 @@
 
 #pragma once
 
-#include "Frame.hpp"
 #include "AudioParams.hpp"
+#include "LoopComponent.hpp"
+#include "Wrapper.hpp"
 
+#include <SDL2/SDL.h>
 #include <atomic>
 #include <condition_variable>
 #include <filesystem>
 #include <memory>
+#include <thread>
 #include <vector>
 #include <stop_token>
 
@@ -39,58 +42,59 @@ extern "C"
 class AudioLoop
 {
 public:
-    void loop(std::stop_token& t);
-    void stop() noexcept;
-    void FillAudioBuffer(std::uint8_t* stream, int len);
-    void togglePause();
-    int decodeFrame();
-    int synchronize_audio(int nb_samples);
-    [[nodiscard]] std::shared_ptr<AVCodecContext> streamOpen();
-    void streamClose() noexcept;
 
-    AudioLoop(const auto) = delete;
-    explicit AudioLoop(const std::filesystem::path&, std::shared_ptr<PacketQueue> audioq, std::shared_ptr<FrameQueue> fq);
+    void consumer_loop(std::stop_token& t);
+
+    [[nodiscard]] std::shared_ptr<AVFormatContext> getFormatCtx() const { return m_format_ctx; }
+    [[nodiscard]] std::shared_ptr<AVCodecContext> getCodecContext() const { return m_codec_ctx; }
+
+    explicit AudioLoop(const std::filesystem::path&);
     ~AudioLoop();
 
-    [[nodiscard]] std::condition_variable* getCv() { return &cv; }
-    [[nodiscard]] std::shared_ptr<AVFormatContext> getFormatCtx() const { return m_format_ctx; }
-    [[nodiscard]] AVStream* getStream() const { return m_format_ctx->streams[m_streamIndex]; }
-private:
-    std::condition_variable cv{};
+    AudioLoop(const AudioLoop&)            = delete;
+    AudioLoop(AudioLoop&&)                 = delete;
+    AudioLoop& operator=(const AudioLoop&) = delete;
+    AudioLoop& operator=(AudioLoop&&)      = delete;
 
+private:
     std::shared_ptr<AVFormatContext> m_format_ctx;
-    std::shared_ptr<PacketQueue> m_packetQ;
-    std::shared_ptr<FrameQueue> m_frameQ;
+    std::shared_ptr<AVCodecContext> m_codec_ctx;
 
-    AVDictionary* opt{};
-    std::uint8_t* m_audioBuf{};
-    std::uint8_t* m_audioBuf1{};
-    SwrContext* swr_ctx{};
+    SwrContext* m_swr_ctx{};
 
-    std::atomic_bool paused{};
+    bool m_paused{};
 
-public:
-    AudioParams audioSrc{};
-    AudioParams audioTgt{};
-private:
+    AudioParams m_audioTgt{};
 
-    std::int64_t seekPos{};
-    std::int64_t seekRel{};
-
-    double m_audioClock{};
-
-    int m_audioBufSize{};
-    unsigned m_audioBuf1Size{};
-    int m_seekFlags{};
     int m_streamIndex{};
     std::atomic_int m_audioVolume{ 5 };
-    int m_audioBufIndex{};
-    int m_audiohwBufSize{};
 
-    bool seekRequest{};
-    bool m_muted{};
+    std::jthread th_producer_loop{};
 
+    SDL_AudioSpec obtained_AudioSpec{};
+    SDL_AudioDeviceID m_audio_deviceID{};
+
+    std::size_t m_position_in_bytes{};
+
+    Wrap::align_buf_t m_produced_buf{};
+
+    int curr_pkt_size{};
+    std::uint8_t* m_curr_pkt_buf{};
+    int m_buffer_used_len{};
+
+    std::mutex m_buffer_mtx{};
+    std::mutex m_format_mtx{};
+    std::vector<std::uint8_t> m_buffer{};
+
+    [[nodiscard]] int FillAudioBuffer();
+
+    void HandleEvent();
+    void InitSwr();
+    void findStream();
+    void deviceOpen();
+    void handleSeekRequest(std::int64_t);
     void openFile(const std::filesystem::path&);
-    bool findStream();
-    void handleSeekRequest();
+    void producer_loop(std::stop_token);
+    void setupAudio();
+    void streamOpen();
 };
