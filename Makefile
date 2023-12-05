@@ -66,8 +66,8 @@ $(TEST)/obj/%.o: $(TEST)/%.cpp
 
 $(TEST)/bin/%: $(TEST)/obj/%.o $(TESTOBJ)
 	@printf "\033[1;97mLinking $@\033[0m\n"
-	@$(VERBOSE) || @printf "$(CXX) $(CXXFLAGS) -lCatch2Main -lCatch2 -c -o $<\n"
-	@$(CXX) $< $(TESTOBJ) $(LDFLAGS) -lCatch2Main -lCatch2 -o $@
+	@$(VERBOSE) || @printf "$(CXX) $(CXXFLAGS) -c -o $<\n"
+	@$(CXX) $< $(TESTOBJ) $(LDFLAGS) -o $@
 	@$(VERBOSE) || @printf "\033[1;92m\033[0G-> \033[1;37m$@ \033[100D\033[38C\033[1;92m(\033[1;97m$$(du -ah $@ | cut -f1)iB\033[1;92m)\033[0m\n"
 
 test: all $(TEST)/bin $(TEST)/obj $(TESTBINS)

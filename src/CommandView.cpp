@@ -77,7 +77,6 @@ void CommandView::draw()
 
     const int y = static_cast<int>(m_ncp.get_abs_y());
     const int x = static_cast<int>(m_commandBuffer.size());
-    util::Log("dimy: {}, just y: {}\n", m_dimy, y);
     enableCursor(y, x);
 
     if (!m_ncp.cursor_move(0, 0))

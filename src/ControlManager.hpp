@@ -29,7 +29,6 @@ struct ControlData;
 struct Control
 {
     using NotifyType = std::function<void()>;
-    Control(auto) = delete;
 
     explicit Control(NotifyType C = {}, ControlManager* = nullptr, bool focused = false);
 
@@ -51,11 +50,11 @@ struct ControlData
 
 struct ControlManager
 {
+    ControlManager(std::shared_ptr<Control> current, std::shared_ptr<Control> last);
+
     void setFocus(std::shared_ptr<ControlData>);
     void toggle() noexcept;
 
     std::shared_ptr<ControlData> m_CurrentControl;
     std::shared_ptr<ControlData> m_LastControl;
-
-    ControlManager(std::shared_ptr<Control> current, std::shared_ptr<Control> last);
 };
