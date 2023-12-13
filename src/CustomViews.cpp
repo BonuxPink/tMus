@@ -121,6 +121,9 @@ void ListView::draw()
 
 bool ListView::handle_input(const ncinput& input) noexcept
 {
+    if (!hasFocus())
+        return false;
+
     if (input.id == 'q')
     {
         Globals::stop_request = true;

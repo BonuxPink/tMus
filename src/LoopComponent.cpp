@@ -38,17 +38,7 @@ struct ViewHandler final
         : m_ni(ni)
     { }
 
-    bool operator ()(ListView& v)
-    {
-        if (v.hasFocus())
-        {
-            return v.handle_input(m_ni);
-        }
-
-        return false;
-    }
-
-    bool operator ()(CommandView& v)
+    bool operator ()(auto& v)
     {
         return v.handle_input(m_ni);
     }
