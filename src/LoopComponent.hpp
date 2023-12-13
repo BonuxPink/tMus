@@ -33,7 +33,7 @@ public:
     using ViewLike = std::variant<CommandView, ListView>;
     LoopCompontent(std::vector<ViewLike>& vec);
 
-    void loop(const ncpp::NotCurses& nc);
+    void loop();
 
 private:
     std::vector<ViewLike>& m_vec;

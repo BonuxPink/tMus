@@ -50,26 +50,26 @@ private:
 
 static std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> Start{};
 
-static ncinput GetKeyPress(notcurses* nc)
+static ncinput GetKeyPress()
 {
     ncinput ni;
 
     util::Log(fg(fmt::color::yellow), "----------------------------------\n");
 
-    notcurses_get_blocking(nc, &ni);
+    notcurses_get_blocking(ncpp::NotCurses::get_instance().get_notcurses(), &ni);
     Start = std::chrono::high_resolution_clock::now();
     util::Log("Start: {}\n", Start);
     return ni;
 }
 
-void LoopCompontent::loop(const ncpp::NotCurses& nc)
+void LoopCompontent::loop()
 {
     Renderer::Render(); // Initial render
 
     static int count = 0;
     while (!Globals::stop_request)
     {
-        auto input = GetKeyPress(nc.get_notcurses());
+        auto input = GetKeyPress();
         for (auto& view : m_vec)
         {
             bool vis = std::visit(ViewHandler{input}, view);
