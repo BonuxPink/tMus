@@ -146,7 +146,7 @@ int main()
 {
     init_logger();
 
-    if (setlocale(LC_ALL, "en_US.utf8") == nullptr)
+    if (setlocale(LC_ALL, "") == nullptr)
     {
         util::Log("Could not set locale to en_US.utf8\n");
         return EXIT_FAILURE;
