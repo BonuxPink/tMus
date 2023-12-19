@@ -18,7 +18,6 @@ endif
 
 #? The Directories, Source, Includes, Objects and Binary
 SRCDIR		:= src
-INCDIR		:= include
 BUILDDIR	:= obj
 SRCEXT		:= cpp
 DEPEXT		:= d
@@ -32,7 +31,6 @@ OPTFLAGS			:= -march=native -O2 -D_FORTIFY_SOURCE=2 -fno-omit-frame-pointer -ftr
 LDCXXFLAGS			:= -lnotcurses++ -lnotcurses-core -lfmt -lSDL2 -lavutil -lavformat -lavcodec -lswresample -lavdevice -lswscale -D_GLIBCXX_ASSERTIONS $(ADDFLAGS)
 override CXXFLAGS	+= $(REQFLAGS) $(LDCXXFLAGS) $(OPTFLAGS) $(WARNFLAGS)
 override LDFLAGS	+= $(LDCXXFLAGS) $(OPTFLAGS) $(WARNFLAGS)
-INC					:= -I$(INCDIR) -I$(SRCDIR)
 
 ifdef DEBUG
 	override OPTFLAGS := -DDEBUG -O0 -g3 -fno-omit-frame-pointer -fno-inline
@@ -97,8 +95,8 @@ objs: $(OBJECTS)
 .ONESHELL:
 $(BUILDDIR)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)
 	@printf "\033[1;97mCompiling $<\033[0m\n"
-	@$(VERBOSE) || printf "$(CXX) $(CXXFLAGS) $(INC) -MMD -c -o $@ $<\n"
-	@$(CXX) $(CXXFLAGS) $(INC) -MMD -c -o $@ $< || exit 1
+	@$(VERBOSE) || printf "$(CXX) $(CXXFLAGS) -MMD -c -o $@ $<\n"
+	@$(CXX) $(CXXFLAGS) -MMD -c -o $@ $< || exit 1
 	@printf "\033[1;92m\033[0G-> \033[1;37m$@ \033[100D\033[38C\033[1;92m(\033[1;97m$$(du -ah $@ | cut -f1)iB\033[1;92m)\n"
 
 #? Non-File Targets
