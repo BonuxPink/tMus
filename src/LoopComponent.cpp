@@ -27,7 +27,7 @@
 #include <notcurses/notcurses.h>
 #include <ratio>
 
-LoopCompontent::LoopCompontent(std::vector<ViewLike>& vec)
+LoopComponent::LoopComponent(std::vector<ViewLike>& vec)
     : m_vec(vec)
 { }
 
@@ -62,7 +62,7 @@ static ncinput GetKeyPress()
     return ni;
 }
 
-void LoopCompontent::loop()
+void LoopComponent::loop()
 {
     Renderer::Render(); // Initial render
 

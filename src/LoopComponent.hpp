@@ -27,11 +27,11 @@
 #include <variant>
 #include <vector>
 
-class LoopCompontent
+class LoopComponent
 {
 public:
     using ViewLike = std::variant<CommandView, ListView>;
-    LoopCompontent(std::vector<ViewLike>& vec);
+    LoopComponent(std::vector<ViewLike>& vec);
 
     void loop();
 

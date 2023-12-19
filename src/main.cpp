@@ -182,7 +182,7 @@ int main()
     const auto songViewFocus  = std::make_shared<Control>();
     const auto manager        = std::make_shared<ControlManager>(albumViewFocus, songViewFocus);
 
-    std::vector<LoopCompontent::ViewLike> views;
+    std::vector<LoopComponent::ViewLike> views;
     views.push_back( CommandView { commandPlane });
     views.push_back( ListView    { albumPlane, albumViewFocus });
     views.push_back( ListView    { songPlane, songViewFocus });
@@ -203,8 +203,8 @@ int main()
     cmdProcessor.processCommand("add ~/Music");
 #endif
 
-    LoopCompontent loop{ views };
-    loop.loop(nc);
+    LoopComponent loop{ views };
+    loop.loop();
 
     if (playbackThread.joinable())
     {
