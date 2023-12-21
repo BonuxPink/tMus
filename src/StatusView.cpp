@@ -51,7 +51,7 @@ void StatusView::draw(std::size_t time)
 void StatusView::internal_draw(std::size_t time)
 {
     m_ncp->get_dim(m_dimy, m_dimx);
-    m_ncp->set_channels((std::uint64_t)ncchannels_bchannel(Colors::StatusTextColor) << 32u | ncchannels_fchannel(Colors::StatusTextColor));
+    m_ncp->set_channels(Colors::DefaultBackground);
     m_ncp->cursor_move((int)m_dimy - 1, 0);
 
     ncpp::Cell transchar{};

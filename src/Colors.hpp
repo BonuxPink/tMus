@@ -24,8 +24,7 @@
 
 namespace Colors
 {
-    inline constexpr auto DefaultBackground { NCCHANNELS_INITIALIZER(0, 0, 0, 255, 255, 255) };
-    inline constexpr auto SelectedColor     { NCCHANNELS_INITIALIZER(255, 255, 255, 237, 249, 0) };
+    inline constexpr auto DefaultBackground { NCCHANNELS_INITIALIZER(0, 0, 0, 204, 201, 195) };
     inline constexpr auto TextColor         { NCCHANNELS_INITIALIZER(0, 0, 0, 255, 255, 255) };
     inline constexpr auto StatusTextColor   { NCCHANNELS_INITIALIZER(255, 255, 255, 0, 0, 0)};
 }
