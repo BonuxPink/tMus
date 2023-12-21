@@ -17,10 +17,7 @@
  * along with tMus. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "Factories.hpp"
-#include "Renderer.hpp"
 #include "globals.hpp"
-#include "Colors.hpp"
 #include "util.hpp"
 #include "CustomViews.hpp"
 
@@ -49,17 +46,18 @@ ListView::ListView(ncpp::Plane& plane, std::shared_ptr<Control> focus)
 
 void ListView::draw()
 {
-    m_ncp.get_dim(m_dimy, m_dimx);
+    unsigned dimy = 0, dimx = 0;
+    m_ncp.get_dim(dimy, dimx);
     static int draw = 0;
     util::Log(fg(fmt::color::teal), "Draw---------------------------{}\n", draw++);
-    m_ncp.get_dim(m_dimy, m_dimx);
+    m_ncp.get_dim(dimy, dimx);
 
     m_ncp.cursor_move(1, 1);
 
-    for (unsigned i = 1; i < m_dimy; ++i)
+    for (unsigned i = 1; i < dimy; ++i)
     {
         ncpp::Cell tmp{ std::uint32_t(0) };
-        m_ncp.hline(tmp, m_dimx - 2);
+        m_ncp.hline(tmp, dimx - 2);
 
         m_ncp.cursor_move(static_cast<int>(i), 1);
     }
@@ -67,15 +65,15 @@ void ListView::draw()
     m_ncp.cursor_move(1, 1);
 
     unsigned printidx = m_startdisp;
-    for (int yoff = 1; yoff < static_cast<int>(m_dimy); ++yoff)
+    for (int yoff = 1; yoff < static_cast<int>(dimy); ++yoff)
     {
-        if (!m_ncp.cursor_move(yoff, static_cast<int>(m_dimx) - 1))
+        if (!m_ncp.cursor_move(yoff, static_cast<int>(dimx) - 1))
         {
-            util::Log(fg(fmt::color::yellow), "Failed to move cursor y:{}:{} x:{}:{}\n", yoff, m_dimy, m_dimx, m_dimx);
+            util::Log(fg(fmt::color::yellow), "Failed to move cursor y:{}:{} x:{}:{}\n", yoff, dimy, dimx, dimx);
             return;
         }
 
-        for (unsigned i = m_dimx + 1; i < m_dimx - 1; ++i)
+        for (unsigned i = dimx + 1; i < dimx - 1; ++i)
         {
             ncpp::Cell trancs{};
             m_ncp.putc(trancs);
@@ -110,7 +108,7 @@ void ListView::draw()
 
         }
 
-        if (static_cast<unsigned int>(yoff) == m_dimy - 2)
+        if (static_cast<unsigned int>(yoff) == dimy - 2)
         {
             break;
         }

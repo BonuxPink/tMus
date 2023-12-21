@@ -56,9 +56,6 @@ private:
     ncpp::Plane* m_ncp{};
     std::shared_ptr<AVFormatContext> m_formatCtx;
     std::shared_ptr<AVCodecContext> m_avctx;
-
-    unsigned m_dimy{};
-    unsigned m_dimx{};
 };
 
 inline std::unique_ptr<StatusView> StatusView::instance;

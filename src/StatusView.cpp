@@ -50,14 +50,15 @@ void StatusView::draw(std::size_t time)
 
 void StatusView::internal_draw(std::size_t time)
 {
-    m_ncp->get_dim(m_dimy, m_dimx);
+    unsigned dimy = 0, dimx = 0;
+    m_ncp->get_dim(dimy, dimx);
     m_ncp->set_channels(Colors::DefaultBackground);
-    m_ncp->cursor_move((int)m_dimy - 1, 0);
+    m_ncp->cursor_move(dimy - 1, 0);
 
     ncpp::Cell transchar{};
-    m_ncp->hline(transchar, m_dimx - 1);
+    m_ncp->hline(transchar, dimx - 1);
 
-    m_ncp->cursor_move((int)m_dimy - 1, 0);
+    m_ncp->cursor_move(dimy - 1, 0);
 
     auto secondsToTime = [](int seconds)
     {

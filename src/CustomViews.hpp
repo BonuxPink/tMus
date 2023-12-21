@@ -95,8 +95,6 @@ private:
     unsigned m_selected{};                                                                     // index of selection
     unsigned m_longop{};                                                                       // columns occupied by longest option
     unsigned m_startdisp{};                                                                    // At which element to start the display
-    unsigned m_dimy{};
-    unsigned m_dimx{};
 };
 
 class PrintLine
