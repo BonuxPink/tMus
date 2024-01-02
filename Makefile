@@ -1,3 +1,5 @@
+# Originally taken from btop
+
 override TIMESTAMP := $(shell date +%s 2>/dev/null || echo "0")
 override DATE_CMD := date
 
@@ -59,8 +61,7 @@ $(TEST)/obj:
 	mkdir -p $@
 
 $(TEST)/obj/%.o: $(TEST)/%.cpp
-	@printf "Compiling $(CXX) $(CXXFLAGS) into $< -c -o $@ \n"
-	@$(CXX) $(CXXFLAGS) $< -c -o $@
+	@$(CXX) $(CXXFLAGS) $< -c -o $@ -Isrc
 
 $(TEST)/bin/%: $(TEST)/obj/%.o $(TESTOBJ)
 	@printf "\033[1;97mLinking $@\033[0m\n"
@@ -68,8 +69,8 @@ $(TEST)/bin/%: $(TEST)/obj/%.o $(TESTOBJ)
 	@$(CXX) $< $(TESTOBJ) $(LDFLAGS) -o $@
 	@$(VERBOSE) || @printf "\033[1;92m\033[0G-> \033[1;37m$@ \033[100D\033[38C\033[1;92m(\033[1;97m$$(du -ah $@ | cut -f1)iB\033[1;92m)\033[0m\n"
 
-test: all $(TEST)/bin $(TEST)/obj $(TESTBINS)
-	@for test in $(TESTBINS) ; do ./$$test ; done
+test: $(TEST)/bin $(TEST)/obj $(TESTBINS)
+	@for test in $(TESTBINS) ; do ./$$test || exit 1; done
 
 #? Make the Directories
 directories:
@@ -97,7 +98,7 @@ $(BUILDDIR)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)
 	@printf "\033[1;97mCompiling $<\033[0m\n"
 	@$(VERBOSE) || printf "$(CXX) $(CXXFLAGS) -MMD -c -o $@ $<\n"
 	@$(CXX) $(CXXFLAGS) -MMD -c -o $@ $< || exit 1
-	@printf "\033[1;92m\033[0G-> \033[1;37m$@ \033[100D\033[38C\033[1;92m(\033[1;97m$$(du -ah $@ | cut -f1)iB\033[1;92m)\n"
+	@printf "\033[1;92m\033[0G-> \033[1;37m$@ \033[100D\033[38C\033[1;92m(\033[1;97m$$(du -ah $@ | cut -f1)iB\033[1;92m)\033[0m\n"
 
 #? Non-File Targets
 .PHONY: all
