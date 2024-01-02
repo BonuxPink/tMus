@@ -1,4 +1,5 @@
-#include <catch2/catch_test_macros.hpp>
+#include "ut.hpp"
+
 #include <ncpp/NotCurses.hh>
 #include <notcurses/notcurses.h>
 #include <utility>
@@ -8,9 +9,11 @@
 
 #include "../src/ControlManager.hpp"
 
-static int glob = 0;
+using namespace boost::ut;
 
 auto stub = [](){};
+
+static int glob = 0;
 
 void func()
 {
@@ -22,106 +25,115 @@ void last()
     glob--;
 }
 
-TEST_CASE ( "manager", "[Controller]" )
+int main()
 {
-    auto X = std::make_shared<Control>(stub, nullptr, true);
-    auto Y = std::make_shared<Control>(stub, nullptr);
+    "ControlManager"_test = []
+    {
+        auto X = std::make_shared<Control>(stub, nullptr, true); // Initially focused
+        auto Y = std::make_shared<Control>(stub);
 
-    auto CM = std::make_shared<ControlManager>(X, Y);
+        auto CM = std::make_shared<ControlManager>(X, Y);
 
-    REQUIRE ( X->m_Data->hasFocus );
+        expect ( X->hasFocus() );
+        expect ( X->m_Data->hasFocus );
 
-    auto b1 = CM->m_CurrentControl->hasFocus;
-    auto b2 = CM->m_LastControl->hasFocus;
+        const auto has_focus = CM->m_CurrentControl->hasFocus;
+        const auto had_focus = CM->m_LastControl->hasFocus;
 
-    CM->toggle();
+        CM->toggle();
 
-    REQUIRE ( CM->m_CurrentControl->hasFocus == !b1 );
-    REQUIRE ( CM->m_LastControl->hasFocus == !b2 );
+        expect ( CM->m_CurrentControl->hasFocus == had_focus );
+        expect ( CM->m_LastControl->hasFocus    == has_focus );
 
-    REQUIRE_FALSE ( X->m_Data->hasFocus );
-    REQUIRE ( Y->m_Data->hasFocus );
-}
+        expect ( not X->m_Data->hasFocus );
+        expect ( Y->m_Data->hasFocus );
 
-TEST_CASE ( "Multifocus", "[Controller]" )
-{
-    notcurses_options opts{ .termtype = nullptr,
-                            .loglevel = NCLOGLEVEL_WARNING,
-                            .margin_t = 0, .margin_r = 0,
-                            .margin_b = 0, .margin_l = 0,
-                            .flags = NCOPTION_SUPPRESS_BANNERS | NCOPTION_CLI_MODE,
+        CM->toggle();
+
+        expect ( CM->m_CurrentControl->hasFocus != had_focus );
+        expect ( CM->m_LastControl->hasFocus    != has_focus );
+
+        expect ( X->m_Data->hasFocus );
+        expect ( not Y->m_Data->hasFocus );
     };
 
-    ncpp::NotCurses nc{ opts };
+    "Multifocus"_test = []
+    {
+        notcurses_options opts{ .termtype = nullptr,
+                                .loglevel = NCLOGLEVEL_FATAL,
+                                .margin_t = 0, .margin_r = 0,
+                                .margin_b = 0, .margin_l = 0,
+                                .flags = NCOPTION_SUPPRESS_BANNERS | NCOPTION_CLI_MODE,
+        };
 
-    auto X = std::make_shared<Control>(stub, nullptr, true);
-    auto Y = std::make_shared<Control>(stub, nullptr);
+        ncpp::NotCurses nc{ opts };
 
-    auto CM = std::make_shared<ControlManager>(X, Y);
+        auto X = std::make_shared<Control>(stub, nullptr, true);
+        auto Y = std::make_shared<Control>(stub, nullptr);
 
-    auto Z = std::make_shared<Control>(stub, CM.get());
+        auto CM = std::make_shared<ControlManager>(X, Y);
 
-    REQUIRE ( X->m_Data->hasFocus );
+        auto Z = std::make_shared<Control>(stub, CM.get());
 
-    Z->focus();
+        expect ( X->m_Data->hasFocus );
 
-    REQUIRE ( Z->m_Data->hasFocus );
-    REQUIRE_FALSE ( X->m_Data->hasFocus );
+        Z->focus();
 
-    // REQUIRE ( Z.get() == CM->m_CurrentControl.get() );
-}
-
-TEST_CASE ( "focus", "[Controller]" )
-{
-    notcurses_options opts{ .termtype = nullptr,
-                            .loglevel = NCLOGLEVEL_WARNING,
-                            .margin_t = 0, .margin_r = 0,
-                            .margin_b = 0, .margin_l = 0,
-                            .flags = NCOPTION_SUPPRESS_BANNERS | NCOPTION_CLI_MODE,
+        expect ( Z->m_Data->hasFocus );
+        expect ( not X->m_Data->hasFocus );
     };
 
-    ncpp::NotCurses nc{ opts };
+    "focus"_test = []
+    {
+        notcurses_options opts{ .termtype = nullptr,
+                                .loglevel = NCLOGLEVEL_FATAL,
+                                .margin_t = 0, .margin_r = 0,
+                                .margin_b = 0, .margin_l = 0,
+                                .flags = NCOPTION_SUPPRESS_BANNERS | NCOPTION_CLI_MODE,
+        };
 
-    auto X = std::make_shared<Control>(func, nullptr);
-    auto Y = std::make_shared<Control>(last, nullptr);
+        ncpp::NotCurses nc{ opts };
 
-    auto CM = std::make_shared<ControlManager>(X, Y);
+        auto X = std::make_shared<Control>(func, nullptr);
+        auto Y = std::make_shared<Control>(last, nullptr);
 
-    X->focus();
+        auto CM = std::make_shared<ControlManager>(X, Y);
 
-    REQUIRE_FALSE( glob == 0 );
-    REQUIRE ( glob == 1 );
+        expect ( glob == 0 );
 
-    REQUIRE ( X->m_Data->hasFocus );
-    REQUIRE_FALSE ( Y->hasFocus() );
+        X->focus();
 
-    Y->focus();
+        expect ( glob == 1 );
 
-    REQUIRE_FALSE( glob == 1 );
-    REQUIRE ( glob == 0 );
+        expect ( X->m_Data->hasFocus );
+        expect ( Y->hasFocus() == false);
 
-    REQUIRE ( Y->m_Data->hasFocus );
-    REQUIRE_FALSE ( X->m_Data->hasFocus );
-}
+        Y->focus();
 
-TEST_CASE ( "toggle", "[Controller]" )
-{
-    auto Current = std::make_shared<Control>(func, nullptr);
-    auto Last = std::make_shared<Control>(last, nullptr);
+        expect ( glob == 0 );
 
-    auto CM = std::make_shared<ControlManager>(Current, Last);
+        expect ( Y->m_Data->hasFocus );
+        expect ( not X->m_Data->hasFocus );
+    };
 
-    REQUIRE (Current->hasFocus() == true);
-    REQUIRE (Last->hasFocus() == false);
+    "toggle"_test = []
+    {
+        auto Current = std::make_shared<Control>(func, nullptr);
+        auto Last    = std::make_shared<Control>(last, nullptr);
 
-    CM->toggle();
+        auto CM = std::make_shared<ControlManager>(Current, Last);
 
-    fmt::print("Current: {} {}\n", Current->hasFocus(), Current->m_Data->hasFocus);
-    REQUIRE (Current->m_Data->hasFocus == false);
-    REQUIRE (Last->m_Data->hasFocus == true);
+        expect (Current->hasFocus() == true);
+        expect (Last->hasFocus()    == false);
 
-    Current->toggle();
+        CM->toggle();
 
-    REQUIRE ( Current->m_Data->hasFocus );
-    REQUIRE_FALSE( Last->m_Data->hasFocus );
+        expect (Current->m_Data->hasFocus == false);
+        expect (Last->m_Data->hasFocus    == true);
+
+        Current->toggle();
+
+        expect ( Current->m_Data->hasFocus );
+        expect ( not Last->m_Data->hasFocus );
+    };
 }
