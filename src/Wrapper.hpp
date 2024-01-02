@@ -86,32 +86,6 @@ namespace Wrap
         return formatContext;
     }
 
-    struct StdPlaneDeleter
-    {
-        ncpp::Plane* stdPlane;
-
-        StdPlaneDeleter()
-            : stdPlane(ncpp::NotCurses::get_instance().get_stdplane())
-        { }
-
-        ~StdPlaneDeleter() { delete stdPlane; }
-
-        ncpp::Plane* operator->() const
-        {
-            return stdPlane;
-        }
-
-        ncpp::Plane* operator*() const
-        {
-            return stdPlane;
-        }
-    };
-
-    inline auto getStdPlane()
-    {
-        return StdPlaneDeleter{};
-    }
-
     struct MyAvPacket
     {
         MyAvPacket(const auto) = delete;

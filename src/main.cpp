@@ -176,7 +176,7 @@ int main()
     const auto stdPlane = Wrap::getStdPlane();
     stdPlane->set_base("", 0, Colors::DefaultBackground);
 
-    auto [albumPlane, songPlane, commandPlane] = MakePlanes(**stdPlane);
+    auto [albumPlane, songPlane, commandPlane] = MakePlanes();
 
     const auto albumViewFocus = std::make_shared<Control>();
     const auto songViewFocus  = std::make_shared<Control>();

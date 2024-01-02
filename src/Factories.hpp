@@ -35,8 +35,7 @@ extern "C"
     #include <libavutil/channel_layout.h>
 }
 
-std::tuple<ncpp::Plane, ncpp::Plane, ncpp::Plane>
-MakePlanes(ncpp::Plane& stdPlane);
+std::tuple<ncpp::Plane, ncpp::Plane, ncpp::Plane> MakePlanes();
 
 ncpp::Plane MakeStatusPlane() noexcept;
 
