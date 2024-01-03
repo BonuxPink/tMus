@@ -1,8 +1,7 @@
-
-#include "../src/AudioLoop.hpp"
-#include "../src/StatusView.hpp"
-#include "../src/Factories.hpp"
-#include "../src/globals.hpp"
+#include "AudioLoop.hpp"
+#include "StatusView.hpp"
+#include "Factories.hpp"
+#include "globals.hpp"
 
 #include "ut.hpp"
 

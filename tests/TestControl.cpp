@@ -7,7 +7,7 @@
 #include <fmt/core.h>
 #include <fmt/format.h>
 
-#include "../src/ControlManager.hpp"
+#include "ControlManager.hpp"
 
 using namespace boost::ut;
 
