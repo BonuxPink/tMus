@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Dāniels Ponamarjovs <bonux@duck.com>
+ * Copyright (C) 2023-2024 Dāniels Ponamarjovs <bonux@duck.com>
  *
  * This file is part of tMus.
  *
@@ -37,7 +37,7 @@ extern "C"
 
 std::tuple<ncpp::Plane, ncpp::Plane, ncpp::Plane> MakePlanes();
 
-ncpp::Plane MakeStatusPlane() noexcept;
+void MakeStatusPlane() noexcept;
 
 CommandProcessor MakeCommandProcessor(ListView&, ListView&) noexcept;
 
