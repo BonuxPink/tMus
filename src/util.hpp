@@ -34,11 +34,9 @@ namespace util
 {
     namespace internal
     {
-        inline constexpr bool SOURCELOC { true };
-        inline constexpr bool TIME { true };
         inline constexpr bool OutputFile { true };
-        inline constexpr bool OutputTerminal { true };
-        inline int fd = 0;
+        inline std::ofstream logFileStream{};
+        inline std::string message_buf{};
     }
     template <typename... Args>
     struct Log final
@@ -47,17 +45,15 @@ namespace util
 
         Log(fmt::text_style style, fmt::format_string<Args...>&& fmt, Args&&... args, std::source_location location = std::source_location::current()) noexcept
         {
-            auto micros = std::chrono::time_point(std::chrono::high_resolution_clock::now());
-            auto message = fmt::format(style, "[{}:{:03}][{:%H:%M:%S}] ", location.file_name(), location.line(), micros);
-            fmt::format_to(std::back_inserter(message), std::forward<fmt::format_string<Args...>>(fmt), std::forward<Args>(args)...);
+            internal::message_buf.clear();
+            const auto micros = std::chrono::time_point(std::chrono::high_resolution_clock::now());
+            fmt::format_to(std::back_inserter(internal::message_buf), style, "[{}:{:03}][{:%H:%M:%S}] ", location.file_name(), location.line(), micros);
+            fmt::format_to(std::back_inserter(internal::message_buf), std::forward<fmt::format_string<Args...>>(fmt), std::forward<Args>(args)...);
 
             if constexpr (internal::OutputFile)
             {
-                auto err = write(internal::fd, message.c_str(), message.size());
-                if (err < 0)
-                {
-                    fmt::print(fg(fmt::color::yellow) | fmt::emphasis::bold, "Failed to write to file: {}\n", strerror(errno));
-                }
+                internal::logFileStream << internal::message_buf;
+                internal::logFileStream.flush();
             }
         }
 
@@ -73,10 +69,4 @@ namespace util
 
     template<typename... Args>
     Log(fmt::format_string<Args...>, Args&&...) -> Log<Args...>;
-
-    template <>
-    struct Log<void>
-    {
-        static void setFd(int in_fd) noexcept { internal::fd = in_fd; }
-    };
 }
