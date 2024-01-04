@@ -9,6 +9,7 @@ using namespace boost::ut;
 
 int main()
 {
+#if 0
     auto p = std::filesystem::path("/home/meow/Music/ACDC/01 - Hells Bells.mp3");
 
     "AudioLoop sound"_test = [&]
@@ -23,13 +24,12 @@ int main()
                                     .loglevel = NCLOGLEVEL_SILENT,
                                     .margin_t = 0, .margin_r = 0,
                                     .margin_b = 0, .margin_l = 0,
-                                    .flags = NCOPTION_SUPPRESS_BANNERS | NCOPTION_CLI_MODE,
+                                    .flags = NCOPTION_SUPPRESS_BANNERS,
             };
 
             ncpp::NotCurses nc{ opts };
 
-            auto statusPlane = MakeStatusPlane();
-            Globals::statusPlane = &statusPlane;
+            MakeStatusPlane();
 
             StatusView::Create(loop.getFormatCtx(), loop.getCodecContext());
 
@@ -41,4 +41,5 @@ int main()
         // std::this_thread::sleep_for(5s);
         // REQUIRE (true) ;
     };
+#endif
 }

@@ -63,7 +63,7 @@ int main()
                                 .loglevel = NCLOGLEVEL_FATAL,
                                 .margin_t = 0, .margin_r = 0,
                                 .margin_b = 0, .margin_l = 0,
-                                .flags = NCOPTION_SUPPRESS_BANNERS | NCOPTION_CLI_MODE,
+                                .flags = NCOPTION_SUPPRESS_BANNERS,
         };
 
         ncpp::NotCurses nc{ opts };
@@ -89,7 +89,7 @@ int main()
                                 .loglevel = NCLOGLEVEL_FATAL,
                                 .margin_t = 0, .margin_r = 0,
                                 .margin_b = 0, .margin_l = 0,
-                                .flags = NCOPTION_SUPPRESS_BANNERS | NCOPTION_CLI_MODE,
+                                .flags = NCOPTION_SUPPRESS_BANNERS,
         };
 
         ncpp::NotCurses nc{ opts };
