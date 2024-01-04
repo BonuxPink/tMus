@@ -55,7 +55,7 @@ all: directories objs
 -include $(OBJECTS:.$(OBJEXT)=.$(DEPEXT))
 
 $(TEST)/bin:
-	mkdir -p $@
+	@mkdir -p $@
 
 $(TEST)/obj:
 	mkdir -p $@
@@ -102,3 +102,4 @@ $(BUILDDIR)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)
 
 #? Non-File Targets
 .PHONY: all
+.PRECIOUS: $(TEST)/obj/%.o # Don't remove object files
