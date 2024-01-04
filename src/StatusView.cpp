@@ -34,7 +34,7 @@ StatusView::StatusView(std::shared_ptr<AVFormatContext> formatCtx,
 void StatusView::Create(std::shared_ptr<AVFormatContext> formatCtx, std::shared_ptr<AVCodecContext> avCodecCtx)
 {
     instance = std::make_unique<StatusView>(formatCtx, avCodecCtx, constructor_tag{});
-    instance->m_ncp = Globals::statusPlane;
+    instance->m_ncp = Globals::statusPlane.get();
 }
 
 bool StatusView::handle_input([[maybe_unused]] const ncinput& ni) noexcept

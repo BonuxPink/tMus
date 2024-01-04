@@ -20,7 +20,7 @@
 #include "Factories.hpp"
 #include "Colors.hpp"
 #include "CommandProcessor.hpp"
-#include "Wrapper.hpp"
+#include "globals.hpp"
 
 #include <memory>
 #include <ncpp/Root.hh>
@@ -110,13 +110,13 @@ std::unique_ptr<SDL_AudioSpec> MakeWantedSpec(int nb_channels)
     return wantedSpec;
 }
 
-ncpp::Plane MakeStatusPlane() noexcept
+void MakeStatusPlane() noexcept
 {
     const auto stdPlane = ncpp::NotCurses::get_instance().get_stdplane();
 
     ncplane_options statusOpts
     {
-        .y = static_cast<int>(ncplane_dim_y(*stdPlane) - 2),
+        .y = static_cast<int>(stdPlane->get_dim_y() - 2),
         .x = 0,
         .rows = 1,
         .cols = stdPlane->get_dim_x(),
@@ -125,8 +125,6 @@ ncpp::Plane MakeStatusPlane() noexcept
         .flags = 0, .margin_b = 0, .margin_r = 0,
     };
 
-    ncpp::Plane statusPlane{ *stdPlane, statusOpts, stdPlane->get_notcurses_cpp() };
-    statusPlane.set_base("", 0, Colors::DefaultBackground);
-
-    return statusPlane;
+    Globals::statusPlane = std::make_unique<ncpp::Plane>(*stdPlane, statusOpts, stdPlane->get_notcurses_cpp());
+    Globals::statusPlane->set_base("", 0, Colors::DefaultBackground);
 }

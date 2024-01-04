@@ -35,6 +35,6 @@ namespace Globals
 {
     inline std::atomic_bool stop_request{ false };
     inline Completion lastCompletion{};
-    inline ncpp::Plane* statusPlane;
+    inline std::unique_ptr<ncpp::Plane> statusPlane;
     inline Event event;
 }
