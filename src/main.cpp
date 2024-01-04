@@ -19,20 +19,17 @@
 
 #include "AudioDevice.hpp"
 #include "AudioLoop.hpp"
-#include "Colors.hpp"
 #include "CustomViews.hpp"
 #include "Factories.hpp"
 #include "LoopComponent.hpp"
 #include "StatusView.hpp"
-#include "Wrapper.hpp"
-#include "globals.hpp"
+#include "tMus.hpp"
 #include "util.hpp"
 
 #include <SDL2/SDL_audio.h>
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
-#include <fcntl.h>
 #include <filesystem>
 #include <functional>
 
@@ -46,43 +43,6 @@ extern "C"
 {
     #include <libavutil/log.h>
     #include <libavutil/channel_layout.h>
-}
-
-static void init_logger()
-{
-    int fd = open("/tmp/log.txt", O_CREAT | O_APPEND | O_WRONLY, 0644);
-    util::Log<void>::setFd(fd);
-
-#if 0
-    auto cb = +[]([[maybe_unused]] void* avcl, [[maybe_unused]] int level, const char* fmt, va_list args)
-    {
-        std::array<char, 1024> buf{0};
-        vsnprintf(buf.data(), buf.size(), fmt, args);
-
-        auto size = strnlen(buf.data(), buf.size());
-
-        auto err = write(util::internal::fd, buf.data(), size);
-        if (err < 0)
-        {
-            fmt::print(fg(fmt::color::yellow) | fmt::emphasis::bold, "Failed to write to file: {}\n", strerror(errno));
-        }
-
-    };
-
-    av_log_set_level(AV_LOG_ERROR);
-    av_log_set_callback(cb);
-#else
-    /*
-     * Just be really quiet.
-     */
-    av_log_set_level(AV_LOG_QUIET);
-    auto cb = +[]([[maybe_unused]] void*,
-                  [[maybe_unused]] int,
-                  [[maybe_unused]] const char*,
-                  [[maybe_unused]] va_list)
-    { };
-    av_log_set_callback(cb);
-#endif
 }
 
 static void SetupCallbacks(ListView& albumViewRef, ListView& songViewRef)
@@ -142,39 +102,18 @@ static void SetupCallbacks(ListView& albumViewRef, ListView& songViewRef)
     });
 }
 
-int main()
+int main() try
 {
-    init_logger();
-
-    if (setlocale(LC_ALL, "") == nullptr)
-    {
-        util::Log("Could not set locale to en_US.utf8\n");
-        return EXIT_FAILURE;
-    }
-
-    if (!SDL_getenv("SDL_AUDIO_ALSA_SET_BUFFER_SIZE"))
-        SDL_setenv("SDL_AUDIO_ALSA_SET_BUFFER_SIZE", "1", 1);
-
-    if (SDL_Init(SDL_INIT_AUDIO))
-    {
-        util::Log("{}\n", SDL_GetError());
-        return EXIT_FAILURE;
-    }
-
     notcurses_options opts{ .termtype = nullptr,
                             .loglevel = NCLOGLEVEL_WARNING,
                             .margin_t = 0, .margin_r = 0,
                             .margin_b = 0, .margin_l = 0,
-                            .flags = NCOPTION_SUPPRESS_BANNERS | NCOPTION_CLI_MODE,
+                            .flags = NCOPTION_SUPPRESS_BANNERS  | NCOPTION_CLI_MODE,
     };
 
     ncpp::NotCurses nc{ opts };
 
-    auto statusPlane = MakeStatusPlane();
-    Globals::statusPlane = &statusPlane;
-
-    const auto stdPlane = Wrap::getStdPlane();
-    stdPlane->set_base("", 0, Colors::DefaultBackground);
+    tMus::Init();
 
     auto [albumPlane, songPlane, commandPlane] = MakePlanes();
 
@@ -215,4 +154,12 @@ int main()
     SDL_Quit();
     SDL_TLSCleanup();
     return EXIT_SUCCESS;
+}
+catch (std::runtime_error& e)
+{
+    util::Log(fg(fmt::color::red), "Exception caught with: {}\n", e.what());
+}
+catch (...)
+{
+    util::Log(fg(fmt::color::red), "Unknown exception caught\n");
 }
