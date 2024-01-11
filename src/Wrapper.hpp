@@ -76,16 +76,6 @@ namespace Wrap
         };
     }
 
-    inline auto make_format_context()
-    {
-        std::shared_ptr<AVFormatContext> formatContext{ avformat_alloc_context(), [](AVFormatContext* ctx)
-        {
-            avformat_close_input(&ctx);
-        }};
-
-        return formatContext;
-    }
-
     struct AvPacket
     {
         AvPacket(int size = 0)

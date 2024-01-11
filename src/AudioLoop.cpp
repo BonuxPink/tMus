@@ -20,17 +20,12 @@
 #include "AudioLoop.hpp"
 #include "Factories.hpp"
 #include "StatusView.hpp"
-#include "Wrapper.hpp"
 #include "globals.hpp"
 
 AudioFileManager::AudioFileManager(const std::filesystem::path& filename, ContextData& ctx_data)
     : m_ctx_data(&ctx_data)
 {
-    m_ctx_data->format_ctx->interrupt_callback.callback = +[]([[maybe_unused]] void*)
-    {
-        return static_cast<int>(Globals::stop_request);
-    };
-    m_ctx_data->format_ctx->interrupt_callback.opaque = nullptr;
+    util::Log(fg(fmt::color::crimson), "{}\n", fmt::ptr(m_ctx_data->format_ctx.get()));
 
     open_and_setup(filename);
     find_stream();
@@ -43,22 +38,29 @@ void AudioFileManager::open_and_setup(const std::filesystem::path& filename)
     AVDictionary* opt{};
     av_dict_set(&opt, "scan_all_pmts", "1", AV_DICT_DONT_OVERWRITE);
 
-    const constexpr int bufSize{ 128 };
-    std::array<char, bufSize> errBuff { 0 };
-
-    auto ptr = m_ctx_data->format_ctx.get();
-    int err = avformat_open_input(&ptr, filename.c_str(), nullptr, &opt);
+    AVFormatContext* ctx{};
+    int err = avformat_open_input(&ctx, filename.c_str(), nullptr, &opt);
     if (err < 0)
     {
-        util::Log(fmt::fg(fmt::color::red), "Error opening 'avformat_open_input'\n");
 
-        av_strerror(err, errBuff.data(), bufSize);
+        av_dict_free(&opt);
+        std::array<char, AV_ERROR_MAX_STRING_SIZE> errBuff { 0 };
+
+        util::Log(fg(fmt::color::yellow), "avformat_open_input: error code: {}, filename: {}, error msg: {}, errno: {}\n",
+                  err, filename.string(), av_make_error_string(errBuff.data(), AV_ERROR_MAX_STRING_SIZE, err), strerror(errno));
 
         throw std::runtime_error(fmt::format("Erorr avformat_open_input, with code: {}, filename: {}, errmsg: {}", err, filename.string(), errBuff.data()));
     }
-
-    av_dict_set(&opt, "scan_all_pmts", nullptr, AV_DICT_MATCH_CASE);
     av_dict_free(&opt);
+
+    m_ctx_data->format_ctx.reset(ctx);
+
+    m_ctx_data->format_ctx->interrupt_callback.callback = +[]([[maybe_unused]] void*)
+    {
+        return static_cast<int>(Globals::stop_request);
+    };
+    m_ctx_data->format_ctx->interrupt_callback.opaque = nullptr;
+
     av_format_inject_global_side_data(m_ctx_data->format_ctx.get());
 }
 
@@ -189,7 +191,7 @@ void AudioFileManager::device_open()
 
 AudioLoop::AudioLoop(const std::filesystem::path& path)
     : m_produced_buf{ Wrap::make_aligned_buffer() }
-    , m_ctx_data{ Wrap::make_format_context(), std::make_shared<AVCodecContext>() }
+    , m_ctx_data{}
     , manager{ path, m_ctx_data }
     , swr{ *m_ctx_data.codec_ctx, manager.getAudioSettings() }
 {
