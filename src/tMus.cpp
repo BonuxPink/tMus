@@ -47,7 +47,7 @@
     av_log_set_callback(cb);
 #endif
 
-void tMus::Init()
+void tMus::InitLog()
 {
     if constexpr (util::internal::OutputFile)
     {
@@ -55,16 +55,6 @@ void tMus::Init()
     }
 
     util::internal::message_buf.reserve(4096);
-
-    if (setlocale(LC_ALL, "") == nullptr)
-    {
-        throw std::runtime_error("Could not set locale to en_US.utf8\n");
-    }
-
-    if (SDL_Init(SDL_INIT_AUDIO))
-    {
-        throw std::runtime_error(std::format("Failed to initialize SDL: {}", SDL_GetError()));
-    }
 
     /*
      * Just be really quiet.
@@ -76,6 +66,19 @@ void tMus::Init()
                   [[maybe_unused]] va_list)
     { };
     av_log_set_callback(cb);
+}
+
+void tMus::Init()
+{
+    if (setlocale(LC_ALL, "") == nullptr)
+    {
+        throw std::runtime_error("Could not set locale to en_US.utf8\n");
+    }
+
+    if (SDL_Init(SDL_INIT_AUDIO))
+    {
+        throw std::runtime_error(std::format("Failed to initialize SDL: {}", SDL_GetError()));
+    }
 
     MakeStatusPlane();
 

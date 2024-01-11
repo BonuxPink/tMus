@@ -22,4 +22,5 @@
 namespace tMus
 {
     void Init();
+    void InitLog();
 }
