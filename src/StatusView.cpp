@@ -24,16 +24,14 @@
 #include <fmt/format.h>
 #include <ncpp/Utilities.hh>
 
-StatusView::StatusView(std::shared_ptr<AVFormatContext> formatCtx,
-                       std::shared_ptr<AVCodecContext> avctx,
+StatusView::StatusView(ContextData& ctx_data,
                        constructor_tag)
-    : m_formatCtx(std::move(formatCtx))
-    , m_avctx(std::move(avctx))
+    : m_ctx_data(&ctx_data)
 { }
 
-void StatusView::Create(std::shared_ptr<AVFormatContext> formatCtx, std::shared_ptr<AVCodecContext> avCodecCtx)
+void StatusView::Create(ContextData& ctx_data)
 {
-    instance = std::make_unique<StatusView>(formatCtx, avCodecCtx, constructor_tag{});
+    instance = std::make_unique<StatusView>(ctx_data, constructor_tag{});
     instance->m_ncp = Globals::statusPlane.get();
 }
 
@@ -79,13 +77,13 @@ void StatusView::internal_draw(std::size_t time)
     const auto bytesPerSecond = 176400;
     const auto seconds        = static_cast<int>(time) / bytesPerSecond;
 
-    const auto durationStr = secondsToTime(static_cast<int>(m_formatCtx->duration / AV_TIME_BASE));
+    const auto durationStr = secondsToTime(static_cast<int>(m_ctx_data->format_ctx->duration / AV_TIME_BASE));
     const auto currentSecondStr = secondsToTime(static_cast<int>(seconds));
 
-    std::string_view url{ m_formatCtx->url };
+    std::string_view url{ m_ctx_data->format_ctx->url };
     auto pos = url.find_last_of('/');
 
-    std::string filename = fmt::format("{} > {} / {} {}", m_formatCtx->url, currentSecondStr, durationStr, std::floor(seconds));
+    std::string filename = fmt::format("{} > {} / {} {}", m_ctx_data->format_ctx->url, currentSecondStr, durationStr, std::floor(seconds));
     filename.erase(0, pos + 1);
 
     const auto* cStr = filename.c_str();

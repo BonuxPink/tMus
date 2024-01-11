@@ -16,21 +16,15 @@
  * You should have received a copy of the GNU General Public License
  * along with tMus. If not, see <https://www.gnu.org/licenses/>.
  */
-
 #pragma once
 
-#include "AudioParams.hpp"
-#include "LoopComponent.hpp"
 #include "Wrapper.hpp"
+#include "ContextData.hpp"
+
+#include <filesystem>
+#include <stop_token>
 
 #include <SDL2/SDL.h>
-#include <atomic>
-#include <condition_variable>
-#include <filesystem>
-#include <memory>
-#include <thread>
-#include <vector>
-#include <stop_token>
 
 extern "C"
 {
@@ -39,16 +33,114 @@ extern "C"
     #include <libswresample/swresample.h>
 }
 
+struct AudioSettings
+{
+    int freq;
+    AVChannelLayout ch_layout;
+    enum AVSampleFormat fmt;
+    int frame_size;
+    int bytes_per_sec;
+};
+
+inline const auto handle_error = [](int ret)
+{
+    if (ret != AVERROR(EAGAIN))
+    {
+        constexpr int bufSize{ 4096 };
+        std::array<char, bufSize> errBuff { 0 };
+        int r = av_strerror(ret, errBuff.data(), bufSize);
+
+        if (r < 0)
+            throw std::runtime_error("av_strerror failed or did not find a description for error\n");
+        else
+            throw std::runtime_error(fmt::format("Error {}\n", errBuff.data()));
+    }
+};
+
+class Swr
+{
+public:
+    Swr(const Swr&) = default;
+    Swr(Swr&&) = delete;
+    Swr& operator=(const Swr&) = default;
+    Swr& operator=(Swr&&) = delete;
+
+    Swr(AVCodecContext &cc, const AudioSettings &audio_settings)
+    {
+        int ret = swr_alloc_set_opts2(&m_swr_ctx, &audio_settings.ch_layout,
+                                      audio_settings.fmt, audio_settings.freq,
+                                      &cc.ch_layout, cc.sample_fmt, cc.sample_rate,
+                                      0, nullptr);
+
+        util::Log(fg(fmt::color::crimson), "Target fmt: {}, freq: {}\n",
+                static_cast<int>(audio_settings.fmt), audio_settings.freq);
+        util::Log(fg(fmt::color::deep_pink), "Codec fmt: {}, freq: {}\n",
+                static_cast<int>(cc.sample_fmt), cc.sample_rate);
+
+        if (ret != 0)
+            throw std::runtime_error(fmt::format(fg(fmt::color::red),
+                                                 "Error swr_alloc_set_opts2 retruned: {}"));
+
+        ret = swr_init(m_swr_ctx);
+        if (ret < 0)
+        {
+            swr_free(&m_swr_ctx);
+            util::Log("swr_free error\n");
+            handle_error(ret);
+        }
+    }
+
+    int convert(std::uint8_t** out, int out_count, std::uint8_t** in, int in_count)
+    {
+        if (int ret = swr_convert(m_swr_ctx, out, out_count, const_cast<const std::uint8_t**>(in), in_count); ret >= 0)
+        {
+            return ret;
+        }
+
+        return 0;
+    }
+
+    ~Swr()
+    {
+        swr_free(&m_swr_ctx);
+    }
+
+    operator SwrContext*() const noexcept { return m_swr_ctx; }
+
+private:
+    SwrContext* m_swr_ctx{};
+};
+
+class AudioFileManager
+{
+public:
+    explicit AudioFileManager(const std::filesystem::path& filename, ContextData&);
+
+    [[nodiscard]] AudioSettings getAudioSettings() const noexcept
+    { return m_audioSettings; }
+
+    [[nodiscard]] int getStreamIndex() const noexcept
+    { return m_streamIndex; }
+
+    [[nodiscard]] SDL_AudioDeviceID getAudioDeviceID() const noexcept
+    { return m_audio_deviceID; }
+
+private:
+    void open_and_setup(const std::filesystem::path& filename);
+    void stream_open();
+    void find_stream();
+    void device_open();
+
+    AudioSettings m_audioSettings{};
+    ContextData* m_ctx_data{};
+    SDL_AudioDeviceID m_audio_deviceID{};
+    int m_streamIndex{};
+};
+
 class AudioLoop
 {
 public:
-
-    void consumer_loop(std::stop_token& t);
-
-    [[nodiscard]] std::shared_ptr<AVFormatContext> getFormatCtx() const { return m_format_ctx; }
-    [[nodiscard]] std::shared_ptr<AVCodecContext> getCodecContext() const { return m_codec_ctx; }
-
-    explicit AudioLoop(const std::filesystem::path&);
+    explicit AudioLoop(const std::filesystem::path& path);
     ~AudioLoop();
 
     AudioLoop(const AudioLoop&)            = delete;
@@ -56,45 +148,38 @@ public:
     AudioLoop& operator=(const AudioLoop&) = delete;
     AudioLoop& operator=(AudioLoop&&)      = delete;
 
+    void consumer_loop(std::stop_token& st);
+    [[nodiscard]] ContextData& getContextData() noexcept
+    { return m_ctx_data; }
+
 private:
-    std::shared_ptr<AVFormatContext> m_format_ctx;
-    std::shared_ptr<AVCodecContext> m_codec_ctx;
+    void producer_loop(std::stop_token st);
+    void InitSwr();
+    int FillAudioBuffer();
+    int Fill();
 
-    SwrContext* m_swr_ctx{};
+    void HandleEvent();
+    void handleSeekRequest(std::int64_t offset);
 
-    bool m_paused{};
-
-    AudioParams m_audioTgt{};
-
-    int m_streamIndex{};
     std::atomic_int m_audioVolume{ 5 };
-
-    std::jthread th_producer_loop{};
-
-    SDL_AudioSpec obtained_AudioSpec{};
-    SDL_AudioDeviceID m_audio_deviceID{};
-
-    std::size_t m_position_in_bytes{};
-
-    Wrap::align_buf_t m_produced_buf{};
-
-    int curr_pkt_size{};
-    std::uint8_t* m_curr_pkt_buf{};
-    int m_buffer_used_len{};
 
     std::mutex m_buffer_mtx{};
     std::mutex m_format_mtx{};
+
+    Wrap::align_buf_t m_produced_buf{};
+
+    std::jthread th_producer_loop{};
+
+    ContextData m_ctx_data{};
+    AudioFileManager manager;
+    Swr swr;
+    SwrContext* m_swr_ctx{};
+    // std::uint8_t* m_curr_pkt_buf{};
+    std::size_t m_position_in_bytes = 0uz;
     std::vector<std::uint8_t> m_buffer{};
 
-    [[nodiscard]] int FillAudioBuffer();
+    int m_buffer_used_len{};
+    int curr_pkt_size{};
 
-    void HandleEvent();
-    void InitSwr();
-    void findStream();
-    void deviceOpen();
-    void handleSeekRequest(std::int64_t);
-    void openFile(const std::filesystem::path&);
-    void producer_loop(std::stop_token);
-    void setupAudio();
-    void streamOpen();
+    bool m_paused{};
 };

@@ -19,31 +19,25 @@
 
 #pragma once
 
-extern "C"
-{
-    #include <libavformat/avformat.h>
-    #include <libavcodec/avcodec.h>
-}
-
 #include <ncpp/NotCurses.hh>
 #include <ncpp/Widget.hh>
 
 #include <memory>
 #include <thread>
 
+#include "ContextData.hpp"
+
 class StatusView
 {
     struct constructor_tag { explicit constructor_tag() = default; };
 public:
 
-    StatusView(std::shared_ptr<AVFormatContext>,
-               std::shared_ptr<AVCodecContext>,
+    StatusView(ContextData&,
                constructor_tag);
 
     static std::unique_ptr<StatusView> instance;
 
-    static void Create(std::shared_ptr<AVFormatContext>,
-                std::shared_ptr<AVCodecContext>);
+    static void Create(ContextData& ctx_data);
 
     static void draw(std::size_t override = 0);
     static void DestroyStatusPlane();
@@ -54,8 +48,7 @@ private:
 
     mutable std::mutex mtx;
     ncpp::Plane* m_ncp{};
-    std::shared_ptr<AVFormatContext> m_formatCtx;
-    std::shared_ptr<AVCodecContext> m_avctx;
+    ContextData* m_ctx_data{};
 };
 
 inline std::unique_ptr<StatusView> StatusView::instance;
