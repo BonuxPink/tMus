@@ -225,7 +225,7 @@ int AudioLoop::FillAudioBuffer()
         return ret;
     };
 
-    auto read_packet = [this](AVFormatContext* format_ctx, Wrap::MyAvPacket& pkt)
+    auto read_packet = [this](AVFormatContext* format_ctx, Wrap::AvPacket& pkt)
     {
         std::scoped_lock lk{ m_format_mtx };
 
@@ -238,8 +238,8 @@ int AudioLoop::FillAudioBuffer()
         return !avcodec_receive_frame(cc, frame);
     };
 
-    Wrap::MyAvPacket pkt{};
-    Wrap::MyAvFrame frame{};
+    Wrap::AvPacket pkt{};
+    Wrap::AvFrame frame{};
 
     int len = 0;
     std::vector<std::uint8_t> buffer;
@@ -261,7 +261,7 @@ int AudioLoop::FillAudioBuffer()
 
         for (auto& byte : buffer)
         {
-            Wrap::MyAvPacket avpkt{ curr_pkt_size };
+            Wrap::AvPacket avpkt{ curr_pkt_size };
             const auto cc = m_ctx_data.codec_ctx.get();
 
             memcpy(avpkt->data, &byte, curr_pkt_size);

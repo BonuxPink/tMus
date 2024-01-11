@@ -23,6 +23,7 @@
 #include "Factories.hpp"
 #include "LoopComponent.hpp"
 #include "StatusView.hpp"
+#include "globals.hpp"
 #include "tMus.hpp"
 #include "util.hpp"
 
@@ -71,9 +72,9 @@ static void SetupCallbacks(ListView& albumViewRef, ListView& songViewRef)
         {
             try
             {
-                AudioLoop state{ audio_path };
-                StatusView::Create(state.getFormatCtx(), state.getCodecContext());
-                state.consumer_loop(tkn);
+                AudioLoop loop{ audio_path };
+                StatusView::Create(loop.getContextData());
+                loop.consumer_loop(tkn);
             }
             catch (const std::runtime_error& e)
             {
@@ -114,6 +115,7 @@ int main() try
     ncpp::NotCurses nc{ opts };
 
     tMus::Init();
+    tMus::InitLog();
 
     auto [albumPlane, songPlane, commandPlane] = MakePlanes();
 
@@ -144,6 +146,7 @@ int main() try
 
     LoopComponent loop{ views };
     loop.loop();
+    Globals::statusPlane.reset();
 
     if (playbackThread.joinable())
     {

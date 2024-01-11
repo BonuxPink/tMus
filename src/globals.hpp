@@ -33,7 +33,7 @@ extern "C"
 
 namespace Globals
 {
-    inline std::atomic_bool stop_request{ false };
+    inline std::atomic_bool stop_request{};
     inline Completion lastCompletion{};
     inline std::unique_ptr<ncpp::Plane> statusPlane;
     inline Event event;

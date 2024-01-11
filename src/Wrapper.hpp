@@ -86,26 +86,27 @@ namespace Wrap
         return formatContext;
     }
 
-    struct MyAvPacket
+    struct AvPacket
     {
-        MyAvPacket(const auto) = delete;
-        MyAvPacket()
+        AvPacket(int size = 0)
         {
-            if (av_new_packet(&pkt, 0) != 0)
+            if (av_new_packet(&pkt, size) != 0)
             {
                 throw std::runtime_error("av_new_packet failed");
             }
         }
 
-        ~MyAvPacket()
+        AvPacket(const AvPacket&) = default;
+        AvPacket(AvPacket&&) = delete;
+        AvPacket& operator=(const AvPacket &) = default;
+        AvPacket& operator=(AvPacket &&) = delete;
+
+        ~AvPacket()
         {
             av_packet_unref(&pkt);
         }
 
-        [[nodiscard]] AVPacket* get() noexcept
-        {
-            return &pkt;
-        }
+        operator AVPacket*() { return &pkt; }
 
         const AVPacket* operator->() noexcept
         {
@@ -114,5 +115,37 @@ namespace Wrap
 
     private:
         AVPacket pkt{};
+    };
+
+    struct AvFrame
+    {
+        AvFrame()
+            : frame{ av_frame_alloc() }
+        {
+            if (frame == nullptr)
+            {
+                throw std::runtime_error("Failed to alloc avframe");
+            }
+        }
+
+        AvFrame(const AvFrame&)            = delete;
+        AvFrame(AvFrame&&)                 = delete;
+        AvFrame& operator=(const AvFrame&) = delete;
+        AvFrame& operator=(AvFrame&&)      = delete;
+
+        ~AvFrame()
+        {
+            av_frame_free(&frame);
+        }
+
+        operator AVFrame*() const { return frame; }
+
+        const AVFrame* operator->() noexcept
+        {
+            return frame;
+        }
+
+    private:
+        AVFrame* frame;
     };
 }
