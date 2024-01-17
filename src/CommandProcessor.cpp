@@ -130,14 +130,12 @@ bool AddCommand::execute(std::string_view str)
         intermediate.replace(0, 1, std::getenv("HOME"));
     }
 
-    std::filesystem::path result = intermediate;
-
-    if (!std::filesystem::exists(result))
+    if (!std::filesystem::exists(intermediate))
     {
         return false;
     }
 
-    auto tmp = Albums(result);
+    auto tmp = Albums(intermediate);
     m_ListView->setItems(std::move(tmp));
     m_ListView->SelectionCallback();
 

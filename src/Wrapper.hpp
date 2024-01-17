@@ -47,7 +47,6 @@ namespace Wrap
 
     template <> struct DeleterOf<::AVPacket>        { void operator()(::AVPacket* p)        { ::av_packet_free(&p); } };
     template <> struct DeleterOf<::AVFrame>         { void operator()(::AVFrame* f)         { ::av_frame_free(&f); } };
-    template <> struct DeleterOf<::AVChannelLayout> { void operator()(::AVChannelLayout* p) { ::av_channel_layout_uninit(p); delete p; } };
     template <> struct DeleterOf<::AVDictionary>    { void operator()(::AVDictionary* p)    { ::av_dict_free(&p); } };
 
     template <typename T> using UniquePtr = std::unique_ptr<T, DeleterOf<T>>;

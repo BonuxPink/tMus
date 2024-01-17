@@ -32,7 +32,8 @@ extern "C"
 
 std::tuple<ncpp::Plane, ncpp::Plane, ncpp::Plane> MakePlanes()
 {
-    const auto stdPlane{ *ncpp::NotCurses::get_instance().get_stdplane() };
+    auto stdPlanePtr = std::unique_ptr<ncpp::Plane>(ncpp::NotCurses::get_instance().get_stdplane());
+    auto& stdPlane = *stdPlanePtr.get();
 
     ncplane_options albOpts
     {
@@ -112,7 +113,8 @@ std::unique_ptr<SDL_AudioSpec> MakeWantedSpec(int nb_channels)
 
 void MakeStatusPlane() noexcept
 {
-    const auto stdPlane = ncpp::NotCurses::get_instance().get_stdplane();
+    const auto stdPlanePtr = std::unique_ptr<ncpp::Plane>(ncpp::NotCurses::get_instance().get_stdplane());
+    const auto stdPlane = stdPlanePtr.get();
 
     ncplane_options statusOpts
     {

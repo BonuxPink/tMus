@@ -174,7 +174,6 @@ private:
     AudioFileManager manager;
     Swr swr;
     SwrContext* m_swr_ctx{};
-    // std::uint8_t* m_curr_pkt_buf{};
     std::size_t m_position_in_bytes = 0uz;
     std::vector<std::uint8_t> m_buffer{};
 

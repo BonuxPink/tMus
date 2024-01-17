@@ -25,8 +25,6 @@
 AudioFileManager::AudioFileManager(const std::filesystem::path& filename, ContextData& ctx_data)
     : m_ctx_data(&ctx_data)
 {
-    util::Log(fg(fmt::color::crimson), "{}\n", fmt::ptr(m_ctx_data->format_ctx.get()));
-
     open_and_setup(filename);
     find_stream();
     stream_open();
@@ -42,7 +40,6 @@ void AudioFileManager::open_and_setup(const std::filesystem::path& filename)
     int err = avformat_open_input(&ctx, filename.c_str(), nullptr, &opt);
     if (err < 0)
     {
-
         av_dict_free(&opt);
         std::array<char, AV_ERROR_MAX_STRING_SIZE> errBuff { 0 };
 
@@ -53,7 +50,7 @@ void AudioFileManager::open_and_setup(const std::filesystem::path& filename)
     }
     av_dict_free(&opt);
 
-    m_ctx_data->format_ctx.reset(ctx);
+    m_ctx_data->format_ctx = std::shared_ptr<AVFormatContext>(ctx, [](AVFormatContext* ptr) { avformat_close_input(&ptr); });
 
     m_ctx_data->format_ctx->interrupt_callback.callback = +[]([[maybe_unused]] void*)
     {
@@ -144,7 +141,7 @@ void AudioFileManager::device_open()
 
     auto wanted = MakeWantedSpec(wantedLayout.nb_channels);
 
-    for (std::array next_sample_rate{ 44'100 }; const auto sample_rate : next_sample_rate)
+    for (std::array next_sample_rate{ 44'100, 48'000 }; const auto sample_rate : next_sample_rate)
     {
         wanted->freq = sample_rate;
         m_audio_deviceID = SDL_OpenAudioDevice(nullptr, 0, wanted.get(), &obtained_spec, 0);
@@ -383,7 +380,7 @@ void AudioLoop::handleSeekRequest(std::int64_t offset)
 {
     {
         std::scoped_lock lk{ m_format_mtx };
-        const auto cc                          = m_ctx_data.codec_ctx;
+        const auto cc                          = m_ctx_data.codec_ctx.get();
         const auto format                      = manager.getAudioSettings().fmt;
         const auto bytes_per_sample            = av_get_bytes_per_sample(static_cast<AVSampleFormat>(format));
         const auto bytes_per_second            = cc->sample_rate * bytes_per_sample * cc->ch_layout.nb_channels;
@@ -400,7 +397,7 @@ void AudioLoop::handleSeekRequest(std::int64_t offset)
             seek_target = current_position_in_seconds + offset;
         }
 
-        avcodec_flush_buffers(cc.get());
+        avcodec_flush_buffers(cc);
 
         const auto seek_min = std::numeric_limits<std::int64_t>::min();
         const auto seek_max = std::numeric_limits<std::int64_t>::max();

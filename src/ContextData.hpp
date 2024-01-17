@@ -10,6 +10,6 @@ extern "C"
 
 struct ContextData
 {
-    std::shared_ptr<AVFormatContext> format_ctx{};
-    std::shared_ptr<AVCodecContext> codec_ctx{};
+    std::shared_ptr<AVFormatContext> format_ctx;
+    std::shared_ptr<AVCodecContext> codec_ctx;
 };

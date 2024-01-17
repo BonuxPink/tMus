@@ -82,6 +82,6 @@ void tMus::Init()
 
     MakeStatusPlane();
 
-    const auto stdPlane = ncpp::NotCurses::get_instance().get_stdplane();
+    const auto stdPlane = std::unique_ptr<ncpp::Plane>(ncpp::NotCurses::get_instance().get_stdplane());
     stdPlane->set_base("", 0, Colors::DefaultBackground);
 }
