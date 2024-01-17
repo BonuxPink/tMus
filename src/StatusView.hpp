@@ -49,6 +49,8 @@ private:
     mutable std::mutex mtx;
     ncpp::Plane* m_ncp{};
     ContextData* m_ctx_data{};
+    std::size_t m_bytes_per_second{};
+    std::string_view m_url{};
 };
 
 inline std::unique_ptr<StatusView> StatusView::instance;

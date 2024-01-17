@@ -20,14 +20,32 @@
 #include "StatusView.hpp"
 #include "Colors.hpp"
 #include "Renderer.hpp"
+#include "util.hpp"
 
 #include <fmt/format.h>
 #include <ncpp/Utilities.hh>
 
 StatusView::StatusView(ContextData& ctx_data,
                        constructor_tag)
-    : m_ctx_data(&ctx_data)
-{ }
+    : m_ctx_data{ &ctx_data }
+    , m_url{ m_ctx_data->format_ctx->url }
+{
+    const auto getBytesPerSecond = [this]
+    {
+        const auto cc = m_ctx_data->codec_ctx;
+
+        const auto bitsPerSample = av_get_bytes_per_sample(cc->sample_fmt) * 8;
+        const auto sampleRate    = cc->sample_rate;
+        const auto channels      = cc->ch_layout.nb_channels;
+
+        return (bitsPerSample * sampleRate * channels) / 8;
+    };
+
+    m_bytes_per_second = getBytesPerSecond();
+
+    auto pos = m_url.find_last_of('/');
+    m_url.remove_prefix(pos + 1);
+}
 
 void StatusView::Create(ContextData& ctx_data)
 {
@@ -60,7 +78,7 @@ void StatusView::internal_draw(std::size_t time)
 
     auto secondsToTime = [](int seconds)
     {
-        int hours = seconds / 360;
+        int hours = seconds / 3600;
         int minutes = (seconds / 60) % 60;
         int secs = seconds % 60;
 
@@ -74,19 +92,12 @@ void StatusView::internal_draw(std::size_t time)
         }
     };
 
-    const auto bytesPerSecond = 176400;
-    const auto seconds        = static_cast<int>(time) / bytesPerSecond;
-
-    const auto durationStr = secondsToTime(static_cast<int>(m_ctx_data->format_ctx->duration / AV_TIME_BASE));
+    const auto seconds          = static_cast<int>(time) / m_bytes_per_second;
+    const auto durationStr      = secondsToTime(static_cast<int>(m_ctx_data->format_ctx->duration / AV_TIME_BASE));
     const auto currentSecondStr = secondsToTime(static_cast<int>(seconds));
 
-    std::string_view url{ m_ctx_data->format_ctx->url };
-    auto pos = url.find_last_of('/');
-
-    std::string filename = fmt::format("{} > {} / {} {}", m_ctx_data->format_ctx->url, currentSecondStr, durationStr, std::floor(seconds));
-    filename.erase(0, pos + 1);
-
-    const auto* cStr = filename.c_str();
+    const auto filename = fmt::format("{} > {} / {}", m_url, currentSecondStr, durationStr);
+    const auto* cStr    = filename.c_str();
 
     std::size_t sizeInBytes{ 0 };
     while (*cStr)
