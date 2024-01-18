@@ -49,6 +49,5 @@ int main()
         expect (nothrow (should_not_throw));
         expect (throws<std::runtime_error>(will_throw));
 
-        Globals::statusPlane.reset();
     };
 }

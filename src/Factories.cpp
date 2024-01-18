@@ -111,7 +111,7 @@ std::unique_ptr<SDL_AudioSpec> MakeWantedSpec(int nb_channels)
     return wantedSpec;
 }
 
-void MakeStatusPlane() noexcept
+std::unique_ptr<ncpp::Plane> MakeStatusPlane() noexcept
 {
     const auto stdPlanePtr = std::unique_ptr<ncpp::Plane>(ncpp::NotCurses::get_instance().get_stdplane());
     const auto stdPlane = stdPlanePtr.get();
@@ -127,6 +127,8 @@ void MakeStatusPlane() noexcept
         .flags = 0, .margin_b = 0, .margin_r = 0,
     };
 
-    Globals::statusPlane = std::make_unique<ncpp::Plane>(*stdPlane, statusOpts, stdPlane->get_notcurses_cpp());
-    Globals::statusPlane->set_base("", 0, Colors::DefaultBackground);
+    auto statusPlane = std::make_unique<ncpp::Plane>(*stdPlane, statusOpts, stdPlane->get_notcurses_cpp());
+    statusPlane->set_base("", 0, Colors::DefaultBackground);
+
+    return statusPlane;
 }

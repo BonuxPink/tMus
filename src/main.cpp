@@ -22,8 +22,6 @@
 #include "CustomViews.hpp"
 #include "Factories.hpp"
 #include "LoopComponent.hpp"
-#include "StatusView.hpp"
-#include "globals.hpp"
 #include "tMus.hpp"
 #include "util.hpp"
 
@@ -73,7 +71,6 @@ static void SetupCallbacks(ListView& albumViewRef, ListView& songViewRef)
             try
             {
                 AudioLoop loop{ audio_path };
-                StatusView::Create(loop.getContextData());
                 loop.consumer_loop(tkn);
             }
             catch (const std::runtime_error& e)
@@ -146,7 +143,6 @@ int main() try
 
     LoopComponent loop{ views };
     loop.loop();
-    Globals::statusPlane.reset();
 
     if (playbackThread.joinable())
     {

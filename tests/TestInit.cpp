@@ -31,6 +31,5 @@ int main()
 
         stdPlane->get_base(c);
         expect (c.get_channels() == Colors::DefaultBackground);
-        Globals::statusPlane.reset(); // FIXME: refactor out global
     };
 }

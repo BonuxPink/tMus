@@ -190,6 +190,7 @@ AudioLoop::AudioLoop(const std::filesystem::path& path)
     : m_produced_buf{ Wrap::make_aligned_buffer() }
     , m_ctx_data{}
     , manager{ path, m_ctx_data }
+    , m_statusView{ m_ctx_data }
     , swr{ *m_ctx_data.codec_ctx, manager.getAudioSettings() }
 {
     th_producer_loop = std::jthread{ [this](std::stop_token st) { this->producer_loop(st); } };
@@ -412,7 +413,7 @@ void AudioLoop::handleSeekRequest(std::int64_t offset)
         else
             m_position_in_bytes += bytes_per_second * offset;
 
-        StatusView::draw(seek_target);
+        m_statusView.draw(seek_target);
     }
 
     std::scoped_lock lk{ m_buffer_mtx };
@@ -454,7 +455,7 @@ void AudioLoop::HandleEvent()
         Globals::event.m_EventHappened = false;
     }
 
-    StatusView::draw(m_position_in_bytes);
+    m_statusView.draw(m_position_in_bytes);
 }
 
 

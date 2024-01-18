@@ -18,6 +18,7 @@
  */
 #pragma once
 
+#include "StatusView.hpp"
 #include "Wrapper.hpp"
 #include "ContextData.hpp"
 
@@ -172,6 +173,7 @@ private:
 
     ContextData m_ctx_data{};
     AudioFileManager manager;
+    StatusView m_statusView;
     Swr swr;
     SwrContext* m_swr_ctx{};
     std::size_t m_position_in_bytes = 0uz;

@@ -20,52 +20,14 @@
 #include "StatusView.hpp"
 #include "Colors.hpp"
 #include "Renderer.hpp"
-#include "util.hpp"
 
 #include <fmt/format.h>
 #include <ncpp/Utilities.hh>
 
-StatusView::StatusView(ContextData& ctx_data,
-                       constructor_tag)
-    : m_ctx_data{ &ctx_data }
-    , m_url{ m_ctx_data->format_ctx->url }
-{
-    const auto getBytesPerSecond = [this]
-    {
-        const auto cc = m_ctx_data->codec_ctx;
-
-        const auto bitsPerSample = av_get_bytes_per_sample(cc->sample_fmt) * 8;
-        const auto sampleRate    = cc->sample_rate;
-        const auto channels      = cc->ch_layout.nb_channels;
-
-        return (bitsPerSample * sampleRate * channels) / 8;
-    };
-
-    m_bytes_per_second = getBytesPerSecond();
-
-    auto pos = m_url.find_last_of('/');
-    m_url.remove_prefix(pos + 1);
-}
-
-void StatusView::Create(ContextData& ctx_data)
-{
-    instance = std::make_unique<StatusView>(ctx_data, constructor_tag{});
-    instance->m_ncp = Globals::statusPlane.get();
-}
-
-bool StatusView::handle_input([[maybe_unused]] const ncinput& ni) noexcept
-{
-    return false;
-}
-
 void StatusView::draw(std::size_t time)
 {
-    std::scoped_lock lk{ instance->mtx };
-    instance->internal_draw(time);
-}
+    std::scoped_lock lk{ mtx };
 
-void StatusView::internal_draw(std::size_t time)
-{
     unsigned dimy = 0, dimx = 0;
     m_ncp->get_dim(dimy, dimx);
     m_ncp->set_channels(Colors::DefaultBackground);
@@ -75,6 +37,9 @@ void StatusView::internal_draw(std::size_t time)
     m_ncp->hline(transchar, dimx - 1);
 
     m_ncp->cursor_move(dimy - 1, 0);
+
+    if (m_url.empty())
+        return;
 
     auto secondsToTime = [](int seconds)
     {

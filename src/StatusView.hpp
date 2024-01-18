@@ -26,31 +26,41 @@
 #include <thread>
 
 #include "ContextData.hpp"
+#include "Factories.hpp"
 
 class StatusView
 {
-    struct constructor_tag { explicit constructor_tag() = default; };
 public:
+    explicit constexpr StatusView(ContextData& ctx_data)
+        : m_ctx_data{ &ctx_data }
+        , m_url{ m_ctx_data->format_ctx->url }
+    {
 
-    StatusView(ContextData&,
-               constructor_tag);
+        m_ncp = MakeStatusPlane();
 
-    static std::unique_ptr<StatusView> instance;
+        const auto getBytesPerSecond = [this]
+        {
+            const auto cc = m_ctx_data->codec_ctx;
 
-    static void Create(ContextData& ctx_data);
+            const auto bitsPerSample = av_get_bytes_per_sample(cc->sample_fmt) * 8;
+            const auto sampleRate    = cc->sample_rate;
+            const auto channels      = cc->ch_layout.nb_channels;
 
-    static void draw(std::size_t override = 0);
-    static void DestroyStatusPlane();
-    bool handle_input(const ncinput&) noexcept;
+            return (bitsPerSample * sampleRate * channels) / 8;
+        };
+
+        m_bytes_per_second = getBytesPerSecond();
+
+        auto pos = m_url.find_last_of('/');
+        m_url.remove_prefix(pos + 1);
+    }
+
+    void draw(std::size_t override = 0);
 private:
 
-    void internal_draw(std::size_t override);
-
     mutable std::mutex mtx;
-    ncpp::Plane* m_ncp{};
+    std::unique_ptr<ncpp::Plane> m_ncp{};
     ContextData* m_ctx_data{};
     std::size_t m_bytes_per_second{};
     std::string_view m_url{};
 };
-
-inline std::unique_ptr<StatusView> StatusView::instance;

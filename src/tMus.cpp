@@ -80,8 +80,6 @@ void tMus::Init()
         throw std::runtime_error(std::format("Failed to initialize SDL: {}", SDL_GetError()));
     }
 
-    MakeStatusPlane();
-
     const auto stdPlane = std::unique_ptr<ncpp::Plane>(ncpp::NotCurses::get_instance().get_stdplane());
     stdPlane->set_base("", 0, Colors::DefaultBackground);
 }

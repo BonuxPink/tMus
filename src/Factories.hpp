@@ -37,7 +37,7 @@ extern "C"
 
 std::tuple<ncpp::Plane, ncpp::Plane, ncpp::Plane> MakePlanes();
 
-void MakeStatusPlane() noexcept;
+std::unique_ptr<ncpp::Plane> MakeStatusPlane() noexcept;
 
 CommandProcessor MakeCommandProcessor(ListView&, ListView&) noexcept;
 
