@@ -155,7 +155,6 @@ public:
 
 private:
     void producer_loop(std::stop_token st);
-    // void InitSwr();
     int FillAudioBuffer();
     int Fill();
 

@@ -303,6 +303,12 @@ void AudioLoop::producer_loop(std::stop_token st)
 {
     while (!Globals::stop_request && !st.stop_requested())
     {
+        if (m_paused)
+        {
+            using namespace std::chrono_literals;
+            std::this_thread::sleep_for(50ms);
+        }
+
         int nr_read = 0;
         try
         {
@@ -431,7 +437,7 @@ void AudioLoop::consumer_loop(std::stop_token& t)
     while (!t.stop_requested() && !Globals::stop_request)
     {
         HandleEvent();
-
+        if (m_paused == false)
         {
             std::scoped_lock lk{ m_buffer_mtx };
 
