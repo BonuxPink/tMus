@@ -3,8 +3,60 @@
 #+EMAIL: bonux@duck.com
 #+OPTIONS: ':nil toc:nil num:nil author:nil email:nil
 
+* NOTE
+This project is in active development and therefore not suitable for day to day use at the moment. Expect bugs
+
 * tMus - terminal music player
 
-tMus is a highly customizable music player that was originally inspired by cmus.
+[[./assets/Screenshot.png]]
 
-The project is in very early state of development, don't expect much.
+** Overview
+tMus is a keyboard driven terminal based music player, it was originally inspired by [[https://github.com/cmus/cmus][cmus]].
+
+** Roadmap
+
+- Recognise =.cue= files and alike for proper album support.
+- Add configuration system so that preferences are saved between runs.
+   + Color configuration, to change away from the boring grey.
+- Visualization, it would be cool to see what sound waves do.
+
+** Features
+- *Notcurses Library*: The user interface is built using the Notcurses library, providing a rich and responsive terminal UI.
+- *SDL*: Sound output is handled by the Simple DirectMedia Layer (SDL), a cross-platform development library designed to provide low level access to audio.
+- *FFmpeg*: Audio processing is done using FFmpeg, a robust and versatile library to handle multimedia data.
+
+** Installation
+
+*** Arch linux
+
+#+begin_src txt
+$ pacman --needed -S ffmpeg sdl2 notcurses make gcc
+#+end_src
+
+*** Ubuntu/Debian
+TODO
+
+*** Building
+
+Make is used as a simple solution for automatic compilation.
+#+begin_src txt
+make
+#+end_src
+
+To make a debug build
+#+begin_src txt
+make clean
+make DEBUG=true
+#+end_src
+
+*** Testing
+For purposes of testing [[https://github.com/boost-ext/ut][ut]] is used.
+To compile and run tests
+#+begin_src txt
+make test
+#+end_src
+
+** Usage
+Please note that the user documentation is not yet complete as of this writing. However, the design of this project is inspired by a Vim-like style, so if you're familiar with Vim, you might find some similarities.
+
+tMus has =:add= which accepts the path to the folder with audio files, this command will add audio files to the user interface. Afer that you can use arrow keys to move around and =TAB= key to switch between two views. =Enter= starts the playback and =space= pauses.
