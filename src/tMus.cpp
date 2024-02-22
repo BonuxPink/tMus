@@ -32,19 +32,9 @@
     {
         std::array<char, 1024> buf{0};
         vsnprintf(buf.data(), buf.size(), fmt, args);
-
-        auto size = strnlen(buf.data(), buf.size());
-
-        auto err = write(util::internal::fd, buf.data(), size);
-        if (err < 0)
-        {
-            fmt::print(fg(fmt::color::yellow) | fmt::emphasis::bold, "Failed to write to file: {}\n", strerror(errno));
-        }
+        util::Log(fg(fmt::color::lavender_blush), "{}", buf.data());
 
     };
-
-    av_log_set_level(AV_LOG_ERROR);
-    av_log_set_callback(cb);
 #endif
 
 void tMus::InitLog()

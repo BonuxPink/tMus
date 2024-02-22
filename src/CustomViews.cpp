@@ -416,11 +416,7 @@ void PrintLine::operator()(const ncpp::Plane& ncp, const ListView::ItemType& ite
     auto str = item.second.filename().string();
     const auto* cStr = str.c_str();
 
-    if (ncplane_cursor_move_yx(ncp.to_ncplane(), yoff, 2))
-    {
-        util::Log(fg(fmt::color::red), "Meow\n");
-        std::terminate();
-    }
+    ncplane_cursor_move_yx(ncp.to_ncplane(), yoff, 2);
 
     while (*cStr)
     {

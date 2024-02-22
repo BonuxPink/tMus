@@ -138,7 +138,10 @@ int main() try
     cmdViewRef.init(&cmdProcessor);
 
 #ifdef DEBUG
-    cmdProcessor.processCommand("add ~/Music");
+    if (std::filesystem::exists("/home/meow/Music"))
+    {
+        cmdProcessor.processCommand("add ~/Music");
+    }
 #endif
 
     LoopComponent loop{ views };
@@ -151,7 +154,6 @@ int main() try
 
     util::Log(fg(fmt::color::green), "Program exiting\n");
     SDL_Quit();
-    // SDL_TLSCleanup();
     return EXIT_SUCCESS;
 }
 catch (std::runtime_error& e)

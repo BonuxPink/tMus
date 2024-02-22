@@ -201,11 +201,6 @@ AudioLoop::~AudioLoop()
 {
     th_producer_loop.request_stop();
 
-    if (m_swr_ctx)
-    {
-        swr_free(&m_swr_ctx);
-    }
-
     const auto id = manager.getAudioDeviceID();
     SDL_PauseAudioDevice(id, 1);
     SDL_CloseAudioDevice(id);
@@ -213,8 +208,10 @@ AudioLoop::~AudioLoop()
 
 int AudioLoop::FillAudioBuffer()
 {
-    auto send_packet = [](AVCodecContext* cc, AVPacket* pkt)
+    auto send_packet = [this](AVCodecContext* cc, AVPacket* pkt)
     {
+        std::scoped_lock lk{ m_format_mtx };
+
         int ret = avcodec_send_packet(cc, pkt);
         if (ret < 0)
         {
@@ -302,37 +299,6 @@ int AudioLoop::FillAudioBuffer()
     }
 }
 
-void AudioLoop::InitSwr()
-{
-    const auto* const codec = m_ctx_data.codec_ctx.get();
-    const auto audio_settings = manager.getAudioSettings();
-    int er = swr_alloc_set_opts2(&m_swr_ctx,
-                        &audio_settings.ch_layout, audio_settings.fmt, audio_settings.freq,
-                        &codec->ch_layout, codec->sample_fmt, codec->sample_rate,
-                        0, nullptr);
-
-    util::Log(fg(fmt::color::crimson), "Target fmt: {}, freq: {}\n", static_cast<int>(audio_settings.fmt), audio_settings.freq);
-    util::Log(fg(fmt::color::deep_pink), "Codec fmt: {}, freq: {}\n", static_cast<int>(codec->sample_fmt), codec->sample_rate);
-
-    if (er != 0)
-    {
-        throw std::runtime_error(fmt::format(fg(fmt::color::red),
-                                             "Error swr_alloc_set_opts2 retruned: {}"));
-    }
-
-    er = swr_init(m_swr_ctx);
-    if (er < 0)
-    {
-        swr_free(&m_swr_ctx);
-
-        std::array<char, 4096> buf{};
-        av_strerror(er, buf.data(), 4096);
-
-        throw std::runtime_error(fmt::format(fg(fmt::color::red),
-                                             "Failed at swr_init() {}", buf.data()));
-    }
-}
-
 void AudioLoop::producer_loop(std::stop_token st)
 {
     while (!Globals::stop_request && !st.stop_requested())
@@ -345,7 +311,6 @@ void AudioLoop::producer_loop(std::stop_token st)
         catch (const std::runtime_error& er)
         {
             util::Log(fg(fmt::color::yellow), "Runtime error: {}\n", er.what());
-            return;
         }
 
         if (nr_read < 0)
@@ -364,15 +329,15 @@ void AudioLoop::producer_loop(std::stop_token st)
         }
         else
         {
-            using namespace std::chrono_literals;
-            std::this_thread::sleep_for(10ms);
-
             std::scoped_lock lk{ m_buffer_mtx };
             if (m_buffer_used_len > 0)
                 std::ranges::copy(m_produced_buf.get(), std::next(m_produced_buf.get(), m_buffer_used_len),
                                   std::back_inserter(m_buffer));
 
             m_buffer_used_len -= m_buffer_used_len;
+
+            using namespace std::chrono_literals;
+            std::this_thread::sleep_for(10ms);
         }
     }
 }
@@ -449,7 +414,7 @@ void AudioLoop::HandleEvent()
             break;
         case PAUSE:
             m_paused = !m_paused;
-            SDL_PauseAudioDevice(2, m_paused);
+            SDL_PauseAudioDevice(manager.getAudioDeviceID(), m_paused);
             break;
         }
         Globals::event.m_EventHappened = false;
@@ -461,13 +426,14 @@ void AudioLoop::HandleEvent()
 
 void AudioLoop::consumer_loop(std::stop_token& t)
 {
+    const auto sample_rate = static_cast<int>(m_ctx_data.codec_ctx.get()->sample_rate);
+
     while (!t.stop_requested() && !Globals::stop_request)
     {
         HandleEvent();
 
         {
             std::scoped_lock lk{ m_buffer_mtx };
-            const auto sample_rate = static_cast<int>(m_ctx_data.codec_ctx.get()->sample_rate);
 
             if (static_cast<int>(m_buffer.size()) >= sample_rate && static_cast<int>(SDL_GetQueuedAudioSize(2)) < sample_rate)
             {

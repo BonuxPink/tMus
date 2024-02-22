@@ -155,7 +155,7 @@ public:
 
 private:
     void producer_loop(std::stop_token st);
-    void InitSwr();
+    // void InitSwr();
     int FillAudioBuffer();
     int Fill();
 
@@ -175,7 +175,6 @@ private:
     AudioFileManager manager;
     StatusView m_statusView;
     Swr swr;
-    SwrContext* m_swr_ctx{};
     std::size_t m_position_in_bytes = 0uz;
     std::vector<std::uint8_t> m_buffer{};
 

@@ -56,7 +56,6 @@ private:
     std::vector<std::uint32_t> m_commandBuffer;
 
     std::uint64_t m_textColor{};
-    std::uint64_t m_backgroundColor{};
 
     unsigned m_dimy{};
     unsigned m_dimx{};
