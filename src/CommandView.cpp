@@ -21,10 +21,6 @@
 #include "Colors.hpp"
 #include "globals.hpp"
 
-#include <cassert>
-#include <cstdlib>
-#include <cstring>
-#include <exception>
 #include <ranges>
 
 #include <notcurses/nckeys.h>

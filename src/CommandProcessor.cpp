@@ -106,7 +106,6 @@ bool SearchCommand::execute(std::string_view str)
     m_ListView.draw();
     m_SongView.draw();
 
-    util::Log("exit\n");
     return true;
 }
 

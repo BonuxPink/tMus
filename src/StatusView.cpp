@@ -24,7 +24,7 @@
 #include <fmt/format.h>
 #include <ncpp/Utilities.hh>
 
-void StatusView::draw(std::size_t time)
+void StatusView::draw(std::size_t time) const
 {
     std::scoped_lock lk{ mtx };
 

@@ -22,9 +22,6 @@
 #include "FocusManager.hpp"
 
 #include <memory>
-#include <optional>
-#include <stop_token>
-#include <string_view>
 #include <vector>
 #include <filesystem>
 #include <functional>

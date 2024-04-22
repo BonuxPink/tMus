@@ -23,7 +23,6 @@
 #include <ncpp/Widget.hh>
 
 #include <memory>
-#include <thread>
 
 #include "ContextData.hpp"
 #include "Factories.hpp"
@@ -35,7 +34,6 @@ public:
         : m_ctx_data{ &ctx_data }
         , m_url{ m_ctx_data->format_ctx->url }
     {
-
         m_ncp = MakeStatusPlane();
 
         const auto getBytesPerSecond = [this]
@@ -55,9 +53,8 @@ public:
         m_url.remove_prefix(pos + 1);
     }
 
-    void draw(std::size_t override = 0);
+    void draw(std::size_t override = 0) const;
 private:
-
     mutable std::mutex mtx;
     std::unique_ptr<ncpp::Plane> m_ncp{};
     ContextData* m_ctx_data{};
