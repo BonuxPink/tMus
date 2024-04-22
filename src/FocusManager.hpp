@@ -25,7 +25,7 @@
 struct FocusManager;
 struct FocusData;
 
-struct Focus
+struct Focus final : public std::enable_shared_from_this<Focus>
 {
     using NotifyType = std::function<void()>;
 
@@ -34,26 +34,32 @@ struct Focus
     [[nodiscard]] bool hasFocus() const noexcept;
 
     void focus();
-    void toggle() const noexcept;
+    void setFocusOff() noexcept;
+    void toggle() noexcept;
     void setNotify(NotifyType f) noexcept;
 
-    std::shared_ptr<FocusData> m_Data;
+    // std::shared_ptr<FocusData> m_Data;
+    Focus::NotifyType m_notify{};
+    FocusManager* m_FocusManager{};
+    bool m_hasFocus{};
 };
 
+#if 0
 struct FocusData
 {
     Focus::NotifyType notify{};
     FocusManager* m_ControlManager{};
     bool hasFocus{};
 };
+#endif
 
-struct FocusManager
+struct FocusManager final
 {
     FocusManager(std::shared_ptr<Focus> current, std::shared_ptr<Focus> last);
 
-    void setFocus(std::shared_ptr<FocusData>);
+    void setFocus(std::shared_ptr<Focus>);
     void toggle() noexcept;
 
-    std::shared_ptr<FocusData> m_CurrentControl;
-    std::shared_ptr<FocusData> m_LastControl;
+    std::shared_ptr<Focus> m_CurrentFocus;
+    std::shared_ptr<Focus> m_LastFocus;
 };

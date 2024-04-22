@@ -23,59 +23,62 @@
 #include <utility>
 
 Focus::Focus(NotifyType C, FocusManager *CM, bool focused)
-    : m_Data(std::make_shared<FocusData>())
-{
-    m_Data->m_ControlManager = CM;
-    m_Data->hasFocus = focused;
-    m_Data->notify = std::move(C);
-}
+    : m_notify(std::move(C)), m_FocusManager(CM), m_hasFocus(focused)
+{ }
 
-bool Focus::hasFocus() const noexcept { return m_Data->hasFocus; }
+bool Focus::hasFocus() const noexcept { return m_hasFocus; }
 
 void Focus::focus()
 {
-    m_Data->m_ControlManager->setFocus(m_Data);
+    m_FocusManager->setFocus(shared_from_this());
 }
 
-void Focus::toggle() const noexcept
+void Focus::toggle() noexcept
 {
-    m_Data->m_ControlManager->toggle();
+    // m_hasFocus = !m_hasFocus;
+    m_FocusManager->toggle();
 }
 
 void Focus::setNotify(NotifyType f) noexcept
 {
-    m_Data->notify = std::move(f);
+    m_notify = std::move(f);
 }
 
-void FocusManager::setFocus(std::shared_ptr<FocusData> ctrl)
+void Focus::setFocusOff() noexcept
 {
-    m_CurrentControl->hasFocus = false;
-    m_LastControl->hasFocus = false;
+    m_hasFocus = false;
+}
 
-    ctrl->notify();
+void FocusManager::setFocus(std::shared_ptr<Focus> ctrl)
+{
+    // m_CurrentFocus->hasFocus = false;
+    // m_LastFocus->hasFocus = false;
+    m_CurrentFocus->setFocusOff();
+    m_LastFocus->setFocusOff();
+
+    ctrl->m_notify();
     Renderer::Render();
-    ctrl->hasFocus = true;
+    ctrl->m_hasFocus = true;
 
-    m_LastControl = m_CurrentControl;
+    m_LastFocus = m_CurrentFocus;
 
-    m_CurrentControl = ctrl;
+    m_CurrentFocus = ctrl;
 }
 
 void FocusManager::toggle() noexcept
 {
-    m_CurrentControl->hasFocus = !m_CurrentControl->hasFocus;
-    m_LastControl->hasFocus = !m_LastControl->hasFocus;
+    m_CurrentFocus->m_hasFocus = !m_CurrentFocus->m_hasFocus;
+    m_LastFocus->m_hasFocus = !m_LastFocus->m_hasFocus;
 
-    m_CurrentControl->notify();
-    m_LastControl->notify();
+    m_CurrentFocus->m_notify();
+    m_LastFocus->m_notify();
 }
 
 FocusManager::FocusManager(std::shared_ptr<Focus> current, std::shared_ptr<Focus> last)
-    : m_CurrentControl(current->m_Data)
-    , m_LastControl(last->m_Data)
+    : m_CurrentFocus(std::move(current))
+    , m_LastFocus(std::move(last))
 {
-    m_CurrentControl->hasFocus = true;
-
-    m_CurrentControl->m_ControlManager = this;
-    m_LastControl->m_ControlManager = this;
+    m_CurrentFocus->m_FocusManager = this;
+    m_LastFocus->m_FocusManager = this;
+    m_CurrentFocus->m_hasFocus = true;
 }
