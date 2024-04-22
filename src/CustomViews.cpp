@@ -34,7 +34,7 @@
 #include <ncpp/Utilities.hh>
 #include <ncpp/Widget.hh>
 
-ListView::ListView(ncpp::Plane& plane, std::shared_ptr<Control> focus)
+ListView::ListView(ncpp::Plane& plane, std::shared_ptr<Focus> focus)
     : ncpp::Widget(ncpp::Utilities::get_notcurses_cpp(plane))
     , m_ncp(plane)
     , m_Focus(std::move(focus))

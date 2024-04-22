@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "ControlManager.hpp"
+#include "FocusManager.hpp"
 
 #include <memory>
 #include <optional>
@@ -51,10 +51,10 @@ public:
     using enterFunc = std::function<bool(const std::filesystem::path&)>;
     using selectFunc = std::function<bool(const std::filesystem::path&)>;
 
-    ListView(ncpp::Plane&, std::shared_ptr<Control>);
+    ListView(ncpp::Plane&, std::shared_ptr<Focus>);
 
     [[nodiscard]] bool hasFocus() const { return m_Focus->hasFocus(); }
-    [[nodiscard]] Control* getFocus() const { return m_Focus.get(); }
+    [[nodiscard]] Focus* getFocus() const { return m_Focus.get(); }
 
     void draw();
     bool handle_input(const ncinput&) noexcept;
@@ -84,7 +84,7 @@ private:
     ncpp::Plane m_ncp;
     ItemContainer m_items{};
 
-    std::shared_ptr<Control> m_Focus{};
+    std::shared_ptr<Focus> m_Focus{};
 
     std::size_t m_itemcount{};
 

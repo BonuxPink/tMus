@@ -116,9 +116,9 @@ int main() try
 
     auto [albumPlane, songPlane, commandPlane] = MakePlanes();
 
-    const auto albumViewFocus = std::make_shared<Control>();
-    const auto songViewFocus  = std::make_shared<Control>();
-    const auto manager        = std::make_shared<ControlManager>(albumViewFocus, songViewFocus);
+    const auto albumViewFocus = std::make_shared<Focus>();
+    const auto songViewFocus  = std::make_shared<Focus>();
+    const auto manager        = std::make_shared<FocusManager>(albumViewFocus, songViewFocus);
 
     std::vector<LoopComponent::ViewLike> views;
     views.push_back( CommandView { commandPlane });

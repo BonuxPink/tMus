@@ -21,16 +21,15 @@
 
 #include <functional>
 #include <memory>
-#include <utility>
 
-struct ControlManager;
-struct ControlData;
+struct FocusManager;
+struct FocusData;
 
-struct Control
+struct Focus
 {
     using NotifyType = std::function<void()>;
 
-    explicit Control(NotifyType C = {}, ControlManager* = nullptr, bool focused = false);
+    explicit Focus(NotifyType C = {}, FocusManager* = nullptr, bool focused = false);
 
     [[nodiscard]] bool hasFocus() const noexcept;
 
@@ -38,23 +37,23 @@ struct Control
     void toggle() const noexcept;
     void setNotify(NotifyType f) noexcept;
 
-    std::shared_ptr<ControlData> m_Data;
+    std::shared_ptr<FocusData> m_Data;
 };
 
-struct ControlData
+struct FocusData
 {
-    Control::NotifyType notify{};
-    ControlManager* m_ControlManager{};
+    Focus::NotifyType notify{};
+    FocusManager* m_ControlManager{};
     bool hasFocus{};
 };
 
-struct ControlManager
+struct FocusManager
 {
-    ControlManager(std::shared_ptr<Control> current, std::shared_ptr<Control> last);
+    FocusManager(std::shared_ptr<Focus> current, std::shared_ptr<Focus> last);
 
-    void setFocus(std::shared_ptr<ControlData>);
+    void setFocus(std::shared_ptr<FocusData>);
     void toggle() noexcept;
 
-    std::shared_ptr<ControlData> m_CurrentControl;
-    std::shared_ptr<ControlData> m_LastControl;
+    std::shared_ptr<FocusData> m_CurrentControl;
+    std::shared_ptr<FocusData> m_LastControl;
 };

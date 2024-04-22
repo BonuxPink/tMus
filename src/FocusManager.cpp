@@ -17,37 +17,37 @@
  * along with tMus. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "ControlManager.hpp"
+#include "FocusManager.hpp"
 #include "Renderer.hpp"
 
 #include <utility>
 
-Control::Control(NotifyType C, ControlManager *CM, bool focused)
-    : m_Data(std::make_shared<ControlData>())
+Focus::Focus(NotifyType C, FocusManager *CM, bool focused)
+    : m_Data(std::make_shared<FocusData>())
 {
     m_Data->m_ControlManager = CM;
     m_Data->hasFocus = focused;
     m_Data->notify = std::move(C);
 }
 
-bool Control::hasFocus() const noexcept { return m_Data->hasFocus; }
+bool Focus::hasFocus() const noexcept { return m_Data->hasFocus; }
 
-void Control::focus()
+void Focus::focus()
 {
     m_Data->m_ControlManager->setFocus(m_Data);
 }
 
-void Control::toggle() const noexcept
+void Focus::toggle() const noexcept
 {
     m_Data->m_ControlManager->toggle();
 }
 
-void Control::setNotify(NotifyType f) noexcept
+void Focus::setNotify(NotifyType f) noexcept
 {
     m_Data->notify = std::move(f);
 }
 
-void ControlManager::setFocus(std::shared_ptr<ControlData> ctrl)
+void FocusManager::setFocus(std::shared_ptr<FocusData> ctrl)
 {
     m_CurrentControl->hasFocus = false;
     m_LastControl->hasFocus = false;
@@ -61,7 +61,7 @@ void ControlManager::setFocus(std::shared_ptr<ControlData> ctrl)
     m_CurrentControl = ctrl;
 }
 
-void ControlManager::toggle() noexcept
+void FocusManager::toggle() noexcept
 {
     m_CurrentControl->hasFocus = !m_CurrentControl->hasFocus;
     m_LastControl->hasFocus = !m_LastControl->hasFocus;
@@ -70,7 +70,7 @@ void ControlManager::toggle() noexcept
     m_LastControl->notify();
 }
 
-ControlManager::ControlManager(std::shared_ptr<Control> current, std::shared_ptr<Control> last)
+FocusManager::FocusManager(std::shared_ptr<Focus> current, std::shared_ptr<Focus> last)
     : m_CurrentControl(current->m_Data)
     , m_LastControl(last->m_Data)
 {
