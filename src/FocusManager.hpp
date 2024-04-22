@@ -38,20 +38,10 @@ struct Focus final : public std::enable_shared_from_this<Focus>
     void toggle() noexcept;
     void setNotify(NotifyType f) noexcept;
 
-    // std::shared_ptr<FocusData> m_Data;
     Focus::NotifyType m_notify{};
     FocusManager* m_FocusManager{};
     bool m_hasFocus{};
 };
-
-#if 0
-struct FocusData
-{
-    Focus::NotifyType notify{};
-    FocusManager* m_ControlManager{};
-    bool hasFocus{};
-};
-#endif
 
 struct FocusManager final
 {
