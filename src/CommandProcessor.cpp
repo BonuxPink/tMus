@@ -91,6 +91,9 @@ bool SearchCommand::execute(std::string_view str)
             break;
     }
 
+    if (found.empty())
+        return false;
+
     util::Log(fg(fmt::color::yellow), "Found: {}\n", found.filename().string());
 
     auto withoutFilename = found.parent_path();
