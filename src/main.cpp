@@ -156,7 +156,11 @@ int main() try
     SDL_Quit();
     return EXIT_SUCCESS;
 }
-catch (std::runtime_error& e)
+catch (const std::runtime_error& e)
+{
+    util::Log(fg(fmt::color::red), "Exception caught with: {}\n", e.what());
+}
+catch (const std::exception& e)
 {
     util::Log(fg(fmt::color::red), "Exception caught with: {}\n", e.what());
 }
