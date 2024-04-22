@@ -133,13 +133,13 @@ bool ListView::handle_input(const ncinput& input) noexcept
 
     if (input.id == NCKEY_UP)
     {
-        SelectPrevitem();
+        SelectPrevItem();
         return true;
     }
 
     else if (input.id == NCKEY_DOWN)
     {
-        SelectNextitem();
+        SelectNextItem();
         return true;
     }
 
@@ -195,7 +195,7 @@ bool ListView::handle_input(const ncinput& input) noexcept
     return false;
 }
 
-void ListView::SelectNextitem()
+void ListView::SelectNextItem()
 {
     if (m_itemcount == 0 || m_selected == m_itemcount - 1)
     {
@@ -221,7 +221,7 @@ void ListView::SelectNextitem()
     draw();
 }
 
-void ListView::SelectPrevitem()
+void ListView::SelectPrevItem()
 {
     if (m_itemcount == 0 || m_selected == 0)
     {

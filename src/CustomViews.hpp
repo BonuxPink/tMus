@@ -61,8 +61,8 @@ public:
 
     void SelectionCallback();
     bool EnterCallback();
-    void SelectNextitem();
-    void SelectPrevitem();
+    void SelectNextItem();
+    void SelectPrevItem();
     void Reset() noexcept;
     void Clear() noexcept;
 
