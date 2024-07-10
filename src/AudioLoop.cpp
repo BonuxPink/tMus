@@ -21,6 +21,7 @@
 #include "Factories.hpp"
 #include "StatusView.hpp"
 #include "globals.hpp"
+#include "util.hpp"
 
 AudioFileManager::AudioFileManager(const std::filesystem::path& filename, ContextData& ctx_data)
     : m_ctx_data(&ctx_data)
@@ -442,8 +443,14 @@ void AudioLoop::consumer_loop(std::stop_token& t)
         {
             std::scoped_lock lk{ m_buffer_mtx };
 
-            if (static_cast<int>(m_buffer.size()) >= sample_rate && static_cast<int>(SDL_GetQueuedAudioSize(2)) < sample_rate)
+            if (static_cast<int>(m_buffer.size()) <= sample_rate / 8 and static_cast<int>(SDL_GetQueuedAudioSize(2)) < sample_rate / 8)
             {
+                continue;
+            }
+
+            if (static_cast<int>(m_buffer.size()) >= sample_rate / 8 && static_cast<int>(SDL_GetQueuedAudioSize(2)) < sample_rate / 8)
+            {
+                util::Log(fg(fmt::color::yellow), "Uploaded\n");
                 const auto min = std::min(sample_rate, static_cast<int>(m_buffer.size()));
                 std::vector<std::uint8_t> dst(min);
 
@@ -456,7 +463,8 @@ void AudioLoop::consumer_loop(std::stop_token& t)
                 m_position_in_bytes += min;
             }
         }
-        using namespace std::chrono_literals;
-        std::this_thread::sleep_for(10ms);
+
+        // using namespace std::chrono_literals;
+        // std::this_thread::sleep_for(10ms);
     }
 }
