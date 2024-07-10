@@ -94,7 +94,7 @@ static void SetupCallbacks(ListView& albumViewRef, ListView& songViewRef)
         }
 
         playbackThread = std::jthread{ starter };
-        pthread_setname_np(playbackThread.native_handle(), "Main loop");
+        pthread_setname_np(playbackThread.native_handle(), "Consumer loop");
 
         return true;
     });
