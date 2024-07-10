@@ -236,10 +236,9 @@ int AudioLoop::FillAudioBuffer()
     };
 
     Wrap::AvPacket pkt{};
-    Wrap::AvFrame frame{};
 
     int len = 0;
-    std::vector<std::uint8_t> buffer;
+    std::span<std::uint8_t> buffer;
     while (true)
     {
         if (curr_pkt_size <= 0)
@@ -252,7 +251,8 @@ int AudioLoop::FillAudioBuffer()
             if (pkt->stream_index == manager.getStreamIndex())
             {
                 curr_pkt_size = pkt->size;
-                buffer.assign(pkt->data, pkt->data + pkt->size);
+                // buffer.assign(pkt->data, pkt->data + pkt->size);
+                buffer = { pkt->data, std::next(pkt->data, pkt->size) };
             }
         }
 
@@ -283,6 +283,7 @@ int AudioLoop::FillAudioBuffer()
                 curr_pkt_size -= len;
                 // buffer.erase(buffer.begin(), buffer.begin() + len);
 
+                Wrap::AvFrame frame{};
                 int ret = receive_frame(cc, frame);
                 if (ret)
                 {
@@ -396,7 +397,7 @@ void AudioLoop::HandleEvent()
 {
     if (Globals::event.m_EventHappened)
     {
-        switch (Globals::event.act)
+        switch (Globals::event.act.load())
         {
         using enum Event::Action;
 
