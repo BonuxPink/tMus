@@ -27,7 +27,6 @@
 #include <fmt/color.h>
 
 #include <chrono>
-#include <mutex>
 #include <source_location>
 
 namespace util
@@ -38,6 +37,16 @@ namespace util
         inline std::ofstream logFileStream{};
         inline std::string message_buf{};
     }
+
+    inline void Printer()
+    {
+        if constexpr (internal::OutputFile)
+        {
+            internal::logFileStream << internal::message_buf;
+            internal::logFileStream.flush();
+        }
+    }
+
     template <typename... Args>
     struct Log final
     {
@@ -48,13 +57,9 @@ namespace util
             internal::message_buf.clear();
             const auto micros = std::chrono::time_point(std::chrono::high_resolution_clock::now());
             fmt::format_to(std::back_inserter(internal::message_buf), style, "[{}:{:03}][{:%H:%M:%S}] ", location.file_name(), location.line(), micros);
-            fmt::format_to(std::back_inserter(internal::message_buf), std::forward<fmt::format_string<Args...>>(fmt), std::forward<Args>(args)...);
+            fmt::format_to(std::back_inserter(internal::message_buf), std::forward<fmt::format_string<Args...>>(std::move(fmt)), std::forward<Args>(args)...);
 
-            if constexpr (internal::OutputFile)
-            {
-                internal::logFileStream << internal::message_buf;
-                internal::logFileStream.flush();
-            }
+            Printer();
         }
 
         Log(fmt::format_string<Args...>&& fmt, Args&&... args, std::source_location location = std::source_location::current()) noexcept
