@@ -27,7 +27,7 @@
 #include <SDL2/SDL.h>
 #include <fcntl.h>
 
-#if 0
+#if 1
     auto cb = +[]([[maybe_unused]] void* avcl, [[maybe_unused]] int level, const char* fmt, va_list args)
     {
         std::array<char, 1024> buf{0};
@@ -50,11 +50,13 @@ void tMus::InitLog()
      * Just be really quiet.
      */
     av_log_set_level(AV_LOG_QUIET);
+#if 0
     auto cb = +[]([[maybe_unused]] void*,
                   [[maybe_unused]] int,
                   [[maybe_unused]] const char*,
                   [[maybe_unused]] va_list)
     { };
+#endif
     av_log_set_callback(cb);
 }
 
