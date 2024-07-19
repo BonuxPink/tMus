@@ -59,6 +59,11 @@ static void SetupCallbacks(ListView& albumViewRef, ListView& songViewRef)
             songVec.push_back({ cols, file.path() });
         }
 
+        // Sort the items alphabetically
+        std::sort(songVec.begin(), songVec.end(), [](const auto& a, const auto& b) {
+            return a.second.string() < b.second.string();
+        });
+
         songViewRef.setItems(std::move(songVec));
 
         return true;
