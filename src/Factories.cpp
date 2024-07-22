@@ -88,29 +88,6 @@ CommandProcessor MakeCommandProcessor(ListView& albumView, ListView& songView) n
     return com;
 }
 
-std::unique_ptr<SDL_AudioSpec> MakeWantedSpec(int nb_channels)
-{
-    auto wantedSpec = std::make_unique<SDL_AudioSpec>();
-
-    wantedSpec->channels = static_cast<unsigned char>(nb_channels);
-    wantedSpec->freq = 48'000;
-
-    if (wantedSpec->channels <= 0)
-    {
-        throw std::runtime_error(fmt::format("Invalid channel layout {}", wantedSpec->channels));
-    }
-
-    wantedSpec->format = AUDIO_S16SYS;
-    wantedSpec->silence = 0;
-    wantedSpec->samples = 2048;
-    wantedSpec->callback = nullptr;
-    wantedSpec->userdata = nullptr;
-
-    util::Log("wanted samples: {}, wanted freq: {}\n", wantedSpec->samples, wantedSpec->freq);
-
-    return wantedSpec;
-}
-
 std::unique_ptr<ncpp::Plane> MakeStatusPlane() noexcept
 {
     const auto stdPlanePtr = std::unique_ptr<ncpp::Plane>(ncpp::NotCurses::get_instance().get_stdplane());

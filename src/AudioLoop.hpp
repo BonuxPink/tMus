@@ -21,11 +21,11 @@
 #include "StatusView.hpp"
 #include "Wrapper.hpp"
 #include "ContextData.hpp"
+#include "Pipewire.hpp"
+#include "util.hpp"
 
 #include <filesystem>
 #include <stop_token>
-
-#include <SDL2/SDL.h>
 
 extern "C"
 {
@@ -36,11 +36,9 @@ extern "C"
 
 struct AudioSettings
 {
-    int freq;
-    AVChannelLayout ch_layout;
-    enum AVSampleFormat fmt;
-    int frame_size;
-    int bytes_per_sec;
+    int freq{};
+    AVChannelLayout ch_layout{};
+    enum AVSampleFormat fmt{};
 };
 
 inline const auto handle_error = [](int ret)
@@ -58,6 +56,23 @@ inline const auto handle_error = [](int ret)
     }
 };
 
+// This function comaprers wheather ffmpeg's format is the same as pipewires
+inline bool DoesPipewireSupportFormat(AVSampleFormat fmt) noexcept
+{
+    switch (fmt)
+    {
+    case AV_SAMPLE_FMT_U8:  [[fallthrough]];
+    case AV_SAMPLE_FMT_S16: [[fallthrough]];
+    case AV_SAMPLE_FMT_FLT:
+        return true;
+
+    case AV_SAMPLE_FMT_S32: [[fallthrough]];
+    case AV_SAMPLE_FMT_NONE: [[fallthrough]];
+    default:
+        return false;
+    }
+}
+
 class Swr
 {
 public:
@@ -68,26 +83,35 @@ public:
 
     Swr(AVCodecContext &cc, const AudioSettings &audio_settings)
     {
-        int ret = swr_alloc_set_opts2(&m_swr_ctx, &audio_settings.ch_layout,
-                                      audio_settings.fmt, audio_settings.freq,
-                                      &cc.ch_layout, cc.sample_fmt, cc.sample_rate,
-                                      0, nullptr);
-
-        util::Log(fg(fmt::color::crimson), "Target fmt: {}, freq: {}\n",
-                static_cast<int>(audio_settings.fmt), audio_settings.freq);
-        util::Log(fg(fmt::color::deep_pink), "Codec fmt: {}, freq: {}\n",
-                static_cast<int>(cc.sample_fmt), cc.sample_rate);
-
-        if (ret != 0)
-            throw std::runtime_error(fmt::format(fg(fmt::color::red),
-                                                 "Error swr_alloc_set_opts2 retruned: {}"));
-
-        ret = swr_init(m_swr_ctx);
-        if (ret < 0)
+        if (not DoesPipewireSupportFormat(cc.sample_fmt) or
+            cc.ch_layout.nb_channels != audio_settings.ch_layout.nb_channels or
+            cc.sample_rate != audio_settings.freq)
         {
-            swr_free(&m_swr_ctx);
-            util::Log("swr_free error\n");
-            handle_error(ret);
+            int ret = swr_alloc_set_opts2(&m_swr_ctx, &audio_settings.ch_layout,
+                                        AV_SAMPLE_FMT_S16, audio_settings.freq,
+                                        &cc.ch_layout, cc.sample_fmt, cc.sample_rate,
+                                        0, nullptr);
+
+            util::Log(fg(fmt::color::crimson), "Target fmt: {}, freq: {}\n",
+                    static_cast<int>(audio_settings.fmt), audio_settings.freq);
+            util::Log(fg(fmt::color::deep_pink), "Codec fmt: {}, freq: {}\n",
+                    static_cast<int>(cc.sample_fmt), cc.sample_rate);
+
+            if (ret != 0)
+                throw std::runtime_error(fmt::format(fg(fmt::color::red),
+                                                    "Error swr_alloc_set_opts2 retruned: {}"));
+
+            ret = swr_init(m_swr_ctx);
+            if (ret < 0)
+            {
+                swr_free(&m_swr_ctx);
+                util::Log("swr_init error\n");
+                handle_error(ret);
+            }
+        }
+        else
+        {
+            util::Log("Not initializing SWR\n");
         }
     }
 
@@ -104,6 +128,11 @@ public:
     ~Swr()
     {
         swr_free(&m_swr_ctx);
+    }
+
+    operator bool() const noexcept
+    {
+        return m_swr_ctx;
     }
 
     operator SwrContext*() const noexcept { return m_swr_ctx; }
@@ -123,18 +152,32 @@ public:
     [[nodiscard]] int getStreamIndex() const noexcept
     { return m_streamIndex; }
 
-    [[nodiscard]] SDL_AudioDeviceID getAudioDeviceID() const noexcept
-    { return m_audio_deviceID; }
+    // [[nodiscard]] SDL_AudioDeviceID getAudioDeviceID() const noexcept
+    // { return m_audio_deviceID; }
+
+    [[nodiscard]] AVSampleFormat getFormat() const noexcept
+    {
+        return m_audioSettings.fmt;
+    }
+
+    [[nodiscard]] int getFreq() const noexcept
+    {
+        return m_audioSettings.freq;
+    }
+
+    [[nodiscard]] int getChannels() const noexcept
+    {
+        return m_audioSettings.ch_layout.nb_channels;
+    }
 
 private:
     void open_and_setup(const std::filesystem::path& filename);
     void stream_open();
     void find_stream();
-    void device_open();
+    void format_fill();
 
     AudioSettings m_audioSettings{};
     ContextData* m_ctx_data{};
-    SDL_AudioDeviceID m_audio_deviceID{};
     int m_streamIndex{};
 };
 
@@ -161,8 +204,6 @@ private:
     void HandleEvent();
     void handleSeekRequest(std::int64_t offset);
 
-    std::atomic_int m_audioVolume{ 5 };
-
     std::mutex m_buffer_mtx{};
     std::mutex m_format_mtx{};
 
@@ -172,6 +213,7 @@ private:
 
     ContextData m_ctx_data{};
     AudioFileManager manager;
+    Pipewire m_pipewire;
     StatusView m_statusView;
     Swr swr;
     std::size_t m_position_in_bytes = 0uz;
@@ -182,3 +224,5 @@ private:
 
     bool m_paused{};
 };
+
+inline std::jthread playbackThread;

@@ -24,10 +24,9 @@
 #include "Colors.hpp"
 
 #include <ncpp/NotCurses.hh>
-#include <SDL2/SDL.h>
 #include <fcntl.h>
 
-#if 1
+#if 0
     auto cb = +[]([[maybe_unused]] void* avcl, [[maybe_unused]] int level, const char* fmt, va_list args)
     {
         std::array<char, 1024> buf{0};
@@ -50,7 +49,7 @@ void tMus::InitLog()
      * Just be really quiet.
      */
     av_log_set_level(AV_LOG_QUIET);
-#if 0
+#if 1
     auto cb = +[]([[maybe_unused]] void*,
                   [[maybe_unused]] int,
                   [[maybe_unused]] const char*,
@@ -65,11 +64,6 @@ void tMus::Init()
     if (setlocale(LC_ALL, "") == nullptr)
     {
         throw std::runtime_error("Could not set locale to en_US.utf8\n");
-    }
-
-    if (SDL_Init(SDL_INIT_AUDIO))
-    {
-        throw std::runtime_error(std::format("Failed to initialize SDL: {}", SDL_GetError()));
     }
 
     const auto stdPlane = std::unique_ptr<ncpp::Plane>(ncpp::NotCurses::get_instance().get_stdplane());

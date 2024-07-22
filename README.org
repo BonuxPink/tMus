@@ -22,7 +22,7 @@ tMus is a keyboard driven terminal based music player, it was originally inspire
 
 ** Features
 - *Notcurses Library*: The user interface is built using the Notcurses library, providing a rich and responsive terminal UI.
-- *SDL*: Sound output is handled by the Simple DirectMedia Layer (SDL), a cross-platform development library designed to provide low level access to audio.
+- *Pipewire*: Sound output is handled by pipewire, a low latency sound API, used by default on most linux distros nowadays.
 - *FFmpeg*: Audio processing is done using FFmpeg, a robust and versatile library to handle multimedia data.
 
 ** Installation

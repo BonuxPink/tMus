@@ -17,7 +17,6 @@
  * along with tMus. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "AudioDevice.hpp"
 #include "AudioLoop.hpp"
 #include "CustomViews.hpp"
 #include "Factories.hpp"
@@ -25,14 +24,10 @@
 #include "tMus.hpp"
 #include "util.hpp"
 
-#include <SDL2/SDL_audio.h>
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
 #include <filesystem>
-#include <functional>
-
-#include <SDL2/SDL.h>
 
 #include <pthread.h>
 #include <stdexcept>
@@ -159,7 +154,6 @@ int main() try
     }
 
     util::Log(fg(fmt::color::green), "Program exiting\n");
-    SDL_Quit();
     return EXIT_SUCCESS;
 }
 catch (const std::runtime_error& e)

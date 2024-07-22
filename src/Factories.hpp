@@ -22,8 +22,6 @@
 #include "CommandProcessor.hpp"
 #include "CustomViews.hpp"
 
-#include <SDL2/SDL_audio.h>
-
 #include <memory>
 #include <functional>
 
@@ -43,5 +41,3 @@ CommandProcessor MakeCommandProcessor(ListView&, ListView&) noexcept;
 
 using MakeViewFunc = std::function<ListView::ItemContainer(std::filesystem::path&&)>;
 ListView MakeView(ncpp::Plane&, MakeViewFunc);
-
-std::unique_ptr<SDL_AudioSpec> MakeWantedSpec(int nb_channels);

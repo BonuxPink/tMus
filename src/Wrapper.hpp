@@ -25,7 +25,6 @@
 #include <stdexcept>
 #include <new>
 
-#include <SDL2/SDL.h>
 #include <ncpp/NotCurses.hh>
 
 extern "C"
@@ -71,7 +70,7 @@ namespace Wrap
     {
         return align_buf_t
         {
-            std::bit_cast<std::uint8_t*>(operator new[](192'000 + 16, std::align_val_t(16)))
+            std::bit_cast<std::uint8_t*>(operator new[](32'000 + 16, std::align_val_t(16)))
         };
     }
 

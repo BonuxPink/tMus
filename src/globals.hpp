@@ -20,8 +20,6 @@
 #pragma once
 
 #include <atomic>
-#include <condition_variable>
-#include <cstdint>
 #include <ncpp/Plane.hh>
 
 #include "Controls.hpp"
@@ -35,5 +33,6 @@ namespace Globals
 {
     inline std::atomic_bool stop_request{};
     inline Completion lastCompletion{};
+    inline float m_audioVolume{ 0.3f };
     inline Event event;
 }

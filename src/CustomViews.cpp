@@ -21,12 +21,9 @@
 #include "util.hpp"
 #include "CustomViews.hpp"
 
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_audio.h>
 #include <filesystem>
 #include <ranges>
 #include <stdexcept>
-#include <string_view>
 
 #include <notcurses/nckeys.h>
 #include <notcurses/notcurses.h>

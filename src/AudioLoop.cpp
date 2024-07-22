@@ -29,7 +29,7 @@ AudioFileManager::AudioFileManager(const std::filesystem::path& filename, Contex
     open_and_setup(filename);
     find_stream();
     stream_open();
-    device_open();
+    format_fill();
 }
 
 void AudioFileManager::open_and_setup(const std::filesystem::path& filename)
@@ -47,7 +47,7 @@ void AudioFileManager::open_and_setup(const std::filesystem::path& filename)
         util::Log(fg(fmt::color::yellow), "avformat_open_input: error code: {}, filename: {}, error msg: {}, errno: {}\n",
                   err, filename.string(), av_make_error_string(errBuff.data(), AV_ERROR_MAX_STRING_SIZE, err), strerror(errno));
 
-        throw std::runtime_error(fmt::format("Erorr avformat_open_input, with code: {}, filename: {}, errmsg: {}", err, filename.string(), errBuff.data()));
+        throw std::runtime_error(fmt::format("Error avformat_open_input, with code: {}, filename: {}, errmsg: {}", err, filename.string(), errBuff.data()));
     }
     av_dict_free(&opt);
 
@@ -130,67 +130,18 @@ void AudioFileManager::find_stream()
     }
 }
 
-void AudioFileManager::device_open()
+void AudioFileManager::format_fill()
 {
-    AVChannelLayout wantedLayout{};
-    SDL_AudioSpec obtained_spec{};
-    int ret = av_channel_layout_copy(&wantedLayout, &m_ctx_data->codec_ctx->ch_layout);
-    if (ret != 0)
-    {
-        throw std::runtime_error("Failed to copy layout with ret");
-    }
-
-    auto wanted = MakeWantedSpec(wantedLayout.nb_channels);
-
-    for (std::array next_sample_rate{ 44'100, 48'000 }; const auto sample_rate : next_sample_rate)
-    {
-        wanted->freq = sample_rate;
-        m_audio_deviceID = SDL_OpenAudioDevice(nullptr, 0, wanted.get(), &obtained_spec, 0);
-    }
-
-    if (obtained_spec.format != AUDIO_S16SYS)
-    {
-        throw std::runtime_error(fmt::format("SDL advised audio format {} is currently not supported", obtained_spec.format));
-    }
-
-    if (obtained_spec.channels != wanted->channels)
-    {
-        av_channel_layout_uninit(&wantedLayout);
-        av_channel_layout_default(&wantedLayout, obtained_spec.channels);
-        if (wantedLayout.order != AV_CHANNEL_ORDER_NATIVE)
-        {
-            throw std::runtime_error(fmt::format("SDL advised channel count {} is currently not supported", obtained_spec.channels));
-        }
-    }
-
-    util::Log(fg(fmt::color::teal),
-            "SDL spec we got Ch: {}, Freq: {}, Format: {}, padding: {}, silence: {}, size: {}\n",
-            obtained_spec.channels, obtained_spec.freq, obtained_spec.format, obtained_spec.padding, obtained_spec.silence, obtained_spec.size);
-
-    SDL_PauseAudioDevice(m_audio_deviceID, 0);
-
-    m_audioSettings.fmt  = AV_SAMPLE_FMT_S16;
-    m_audioSettings.freq = obtained_spec.freq;
-
-    if (av_channel_layout_copy(&m_audioSettings.ch_layout, &wantedLayout))
-    {
-        throw std::runtime_error("Failed to copy layout");
-    }
-
-    m_audioSettings.frame_size = av_samples_get_buffer_size(nullptr, m_audioSettings.ch_layout.nb_channels, 1, m_audioSettings.fmt, 1);
-    m_audioSettings.bytes_per_sec = av_samples_get_buffer_size(nullptr, m_audioSettings.ch_layout.nb_channels, 1, m_audioSettings.fmt, 1);
-
-    if (m_audioSettings.bytes_per_sec <= 0 || m_audioSettings.frame_size <= 0)
-    {
-        throw std::runtime_error(fmt::format("bytes_per_sec: {} or frame_size: {} are dubious",
-                                            m_audioSettings.bytes_per_sec, m_audioSettings.frame_size));
-    }
+    m_audioSettings.fmt       = m_ctx_data->codec_ctx->sample_fmt;
+    m_audioSettings.freq      = m_ctx_data->codec_ctx->sample_rate;
+    m_audioSettings.ch_layout = m_ctx_data->codec_ctx->ch_layout;
 }
 
-AudioLoop::AudioLoop(const std::filesystem::path& path)
+AudioLoop::AudioLoop(const std::filesystem::path &path )
     : m_produced_buf{ Wrap::make_aligned_buffer() }
     , m_ctx_data{}
     , manager{ path, m_ctx_data }
+    , m_pipewire{ manager.getFormat(), manager.getFreq(), manager.getChannels() }
     , m_statusView{ m_ctx_data }
     , swr{ *m_ctx_data.codec_ctx, manager.getAudioSettings() }
 {
@@ -201,10 +152,10 @@ AudioLoop::AudioLoop(const std::filesystem::path& path)
 AudioLoop::~AudioLoop()
 {
     th_producer_loop.request_stop();
-
-    const auto id = manager.getAudioDeviceID();
-    SDL_PauseAudioDevice(id, 1);
-    SDL_CloseAudioDevice(id);
+    if (th_producer_loop.joinable())
+    {
+        th_producer_loop.join();
+    }
 }
 
 int AudioLoop::FillAudioBuffer()
@@ -228,6 +179,11 @@ int AudioLoop::FillAudioBuffer()
         std::scoped_lock lk{ m_format_mtx };
 
         auto ret = av_read_frame(format_ctx, pkt);
+        if (ret < 0)
+        {
+            std::array<char, 256> buf{};
+            throw std::runtime_error(std::format("Error: {}\n", av_strerror(ret, buf.data(), buf.size())));
+        }
         return ret;
     };
 
@@ -252,7 +208,6 @@ int AudioLoop::FillAudioBuffer()
             if (pkt->stream_index == manager.getStreamIndex())
             {
                 curr_pkt_size = pkt->size;
-                // buffer.assign(pkt->data, pkt->data + pkt->size);
                 buffer = { pkt->data, std::next(pkt->data, pkt->size) };
             }
         }
@@ -281,20 +236,44 @@ int AudioLoop::FillAudioBuffer()
             }
             else
             {
-                curr_pkt_size -= len;
-                // buffer.erase(buffer.begin(), buffer.begin() + len);
-
-                Wrap::AvFrame frame{};
-                int ret = receive_frame(cc, frame);
-                if (ret)
+                if (swr)
                 {
-                    const auto nb_samples = frame->nb_samples;
-                    auto buf_ptr = m_produced_buf.get();
+                    curr_pkt_size -= len;
+                    Wrap::AvFrame frame{};
+                    int ret = receive_frame(cc, frame);
+                    if (ret)
+                    {
+                        const auto nb_samples = frame->nb_samples;
+                        auto buf_ptr = m_produced_buf.get();
 
-                    ret = swr.convert(&buf_ptr, nb_samples, frame->extended_data, nb_samples);
+                        ret = swr.convert(&buf_ptr, nb_samples, frame->extended_data, nb_samples);
 
-                    m_buffer_used_len = ret * cc->ch_layout.nb_channels * static_cast<int>(sizeof(int16_t));
-                    return m_buffer_used_len;
+                        m_buffer_used_len = ret * cc->ch_layout.nb_channels * static_cast<int>(sizeof(int16_t));
+                        return m_buffer_used_len;
+                    }
+                }
+                else
+                {
+                    curr_pkt_size -= len;
+                    Wrap::AvFrame frame{};
+                    int ret = receive_frame(cc, frame);
+                    if (ret)
+                    {
+                        m_buffer_used_len = av_samples_get_buffer_size(nullptr,
+                                                                       cc->ch_layout.nb_channels,
+                                                                       frame->nb_samples,
+                                                                       manager.getFormat(), 1);
+                        if (m_buffer_used_len < 0)
+                        {
+                            std::array<char, 128> errbuf{};
+                            av_strerror(m_buffer_used_len, errbuf.data(), errbuf.size());
+                            util::Log("av_samples_get_buffer_size failed with: {}\n", errbuf.data());
+                            return 0;
+                        }
+
+                        memcpy(m_produced_buf.get(), frame->data[0], m_buffer_used_len);
+                        return m_buffer_used_len;
+                    }
                 }
             }
         }
@@ -311,17 +290,7 @@ void AudioLoop::producer_loop(std::stop_token st)
             std::this_thread::sleep_for(50ms);
         }
 
-        int nr_read = 0;
-        try
-        {
-            nr_read = FillAudioBuffer();
-        }
-        catch (const std::runtime_error& er)
-        {
-            util::Log(fg(fmt::color::yellow), "Runtime error: {}\n", er.what());
-        }
-
-        if (nr_read < 0)
+        if (int nr_read = FillAudioBuffer(); nr_read < 0)
         {
             if (nr_read != -1 || errno != EAGAIN)
             {
@@ -331,6 +300,7 @@ void AudioLoop::producer_loop(std::stop_token st)
             else
             {
                 // Sleep and try again while data is not available
+                util::Log("Sleep and try again\n");
                 using namespace std::chrono_literals;
                 std::this_thread::sleep_for(50ms);
             }
@@ -338,14 +308,15 @@ void AudioLoop::producer_loop(std::stop_token st)
         else
         {
             std::scoped_lock lk{ m_buffer_mtx };
-            if (m_buffer_used_len > 0)
-                std::ranges::copy(m_produced_buf.get(), std::next(m_produced_buf.get(), m_buffer_used_len),
-                                  std::back_inserter(m_buffer));
+
+            if (auto ptr = m_produced_buf.get(); ptr)
+            {
+                std::ranges::copy(ptr,
+                                std::next(ptr, nr_read),
+                                std::back_inserter(m_buffer));
+            }
 
             m_buffer_used_len -= m_buffer_used_len;
-
-            using namespace std::chrono_literals;
-            std::this_thread::sleep_for(10ms);
         }
     }
 }
@@ -390,7 +361,6 @@ void AudioLoop::handleSeekRequest(std::int64_t offset)
     }
 
     std::scoped_lock lk{ m_buffer_mtx };
-    SDL_ClearQueuedAudio(manager.getAudioDeviceID());
     m_buffer.clear();
 }
 
@@ -403,15 +373,17 @@ void AudioLoop::HandleEvent()
         using enum Event::Action;
 
         case UP_VOLUME:
-            if (m_audioVolume < 100)
+            if (Globals::m_audioVolume <= .99f)
             {
-                m_audioVolume += 1;
+                Globals::m_audioVolume += 0.01f;
+                m_pipewire.set_volume(Globals::m_audioVolume);
             }
             break;
         case DOWN_VOLUME:
-            if (m_audioVolume > 0)
+            if (Globals::m_audioVolume > 0.f)
             {
-                m_audioVolume -= 1;
+                Globals::m_audioVolume -= 0.01f;
+                m_pipewire.set_volume(Globals::m_audioVolume);
             }
             break;
         case SEEK_FORWARDS:
@@ -422,7 +394,7 @@ void AudioLoop::HandleEvent()
             break;
         case PAUSE:
             m_paused = !m_paused;
-            SDL_PauseAudioDevice(manager.getAudioDeviceID(), m_paused);
+            // SDL_PauseAudioDevice(manager.getAudioDeviceID(), m_paused);
             break;
         }
         Globals::event.m_EventHappened = false;
@@ -434,8 +406,6 @@ void AudioLoop::HandleEvent()
 
 void AudioLoop::consumer_loop(std::stop_token& t)
 {
-    const auto sample_rate = static_cast<int>(m_ctx_data.codec_ctx.get()->sample_rate);
-
     while (!t.stop_requested() && !Globals::stop_request)
     {
         HandleEvent();
@@ -443,28 +413,14 @@ void AudioLoop::consumer_loop(std::stop_token& t)
         {
             std::scoped_lock lk{ m_buffer_mtx };
 
-            if (static_cast<int>(m_buffer.size()) <= sample_rate / 8 and static_cast<int>(SDL_GetQueuedAudioSize(2)) < sample_rate / 8)
-            {
-                continue;
-            }
+            auto ret = m_pipewire.write_audio(m_buffer.data(), m_buffer.size());
 
-            if (static_cast<int>(m_buffer.size()) >= sample_rate / 8 && static_cast<int>(SDL_GetQueuedAudioSize(2)) < sample_rate / 8)
-            {
-                util::Log(fg(fmt::color::yellow), "Uploaded\n");
-                const auto min = std::min(sample_rate, static_cast<int>(m_buffer.size()));
-                std::vector<std::uint8_t> dst(min);
+            const auto min = std::min(ret, m_buffer.size());
 
-                const auto vol = m_audioVolume.load();
+            m_buffer.erase(m_buffer.begin(), std::next(m_buffer.begin(), static_cast<long long>(min)));
+            m_position_in_bytes += min;
 
-                SDL_MixAudioFormat(dst.data(), m_buffer.data(), AUDIO_S16SYS, min, vol);
-                SDL_QueueAudio(manager.getAudioDeviceID(), dst.data(), static_cast<unsigned>(dst.size()));
-
-                m_buffer.erase(m_buffer.begin(), std::next(m_buffer.begin(), min));
-                m_position_in_bytes += min;
-            }
+            m_pipewire.period_wait();
         }
-
-        // using namespace std::chrono_literals;
-        // std::this_thread::sleep_for(10ms);
     }
 }

@@ -30,10 +30,10 @@ OBJEXT		:= o
 PROGNAME := tMus
 #? Flags, Libraries and Includes
 override REQFLAGS   := -std=c++23
-WARNFLAGS			:= -Wall -Wextra -pedantic -Werror=uninitialized -Werror=shadow -Wnon-virtual-dtor -Wdouble-promotion -Wunused -Wduplicated-cond -Wduplicated-branches -Wnull-dereference -Wconversion -Wno-sign-conversion -Werror -Wdeprecated -Wdeprecated-copy-dtor
+WARNFLAGS			:= -Wall -Wextra -Werror=uninitialized -Werror=shadow -Wnon-virtual-dtor -Wdouble-promotion -Wunused -Wduplicated-cond -Wduplicated-branches -Wnull-dereference -Wconversion -Wno-sign-conversion -Wdeprecated -Wdeprecated-copy-dtor -fdiagnostics-show-option
 OPTFLAGS			:= -march=native -O2 -D_FORTIFY_SOURCE=3 -fno-omit-frame-pointer -ftree-loop-vectorize
-LDCXXFLAGS			:= -lnotcurses++ -lnotcurses-core -lfmt -lSDL2 -lavutil -lavformat -lavcodec -lswresample -lavdevice -lswscale -D_GLIBCXX_ASSERTIONS $(ADDFLAGS)
-override CXXFLAGS	+= $(REQFLAGS) $(LDCXXFLAGS) $(OPTFLAGS) $(WARNFLAGS)
+LDCXXFLAGS			:= -lnotcurses++ -lnotcurses-core -lfmt -lavutil -lavformat -lavcodec -lswresample -lavdevice -lswscale -D_GLIBCXX_ASSERTIONS -lpipewire-0.3 $(ADDFLAGS)
+override CXXFLAGS	+= $(REQFLAGS) $(LDCXXFLAGS) $(OPTFLAGS) $(WARNFLAGS) -I/usr/include/pipewire-0.3/ -I/usr/include/spa-0.2/
 override LDFLAGS	+= $(LDCXXFLAGS) $(OPTFLAGS) $(WARNFLAGS)
 
 ifdef DEBUG

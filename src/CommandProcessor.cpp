@@ -17,8 +17,8 @@
  * along with tMus. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include "AudioLoop.hpp"
 #include "CommandProcessor.hpp"
-#include "AudioDevice.hpp"
 #include "globals.hpp"
 #include "util.hpp"
 
