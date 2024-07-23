@@ -181,100 +181,105 @@ int AudioLoop::FillAudioBuffer()
         auto ret = av_read_frame(format_ctx, pkt);
         if (ret < 0)
         {
-            std::array<char, 256> buf{};
-            throw std::runtime_error(std::format("Error: {}\n", av_strerror(ret, buf.data(), buf.size())));
+            if (ret == AVERROR_EOF)
+            {
+                util::Log("av_read_frame: EOF\n");
+                return -2;
+            }
+
+            std::array<char, 128> buf{};
+            int error_ret = av_strerror(ret, buf.data(), buf.size());
+            if (error_ret == 0)
+                throw std::runtime_error(std::format("Error: {}\n", buf.data()));
+            else
+                throw std::runtime_error("Failed abtain erorr from av_strerorr");
         }
         return ret;
     };
 
-    auto receive_frame = [](AVCodecContext* cc, AVFrame* frame)
-    {
-        return !avcodec_receive_frame(cc, frame);
-    };
-
     Wrap::AvPacket pkt{};
 
-    int len = 0;
     std::span<std::uint8_t> buffer;
     while (true)
     {
-        if (curr_pkt_size <= 0)
+        if (buffer.empty())
         {
             av_packet_unref(pkt);
 
             if (auto ret = read_packet(m_ctx_data.format_ctx.get(), pkt); ret < 0)
+            {
+                if (ret == -2)
+                    return ret;
+
                 return 0;
+            }
 
             if (pkt->stream_index == manager.getStreamIndex())
-            {
-                curr_pkt_size = pkt->size;
                 buffer = { pkt->data, std::next(pkt->data, pkt->size) };
-            }
         }
 
         for (auto& byte : buffer)
         {
-            Wrap::AvPacket avpkt{ curr_pkt_size };
+            Wrap::AvPacket avpkt{ buffer.size() };
             const auto cc = m_ctx_data.codec_ctx.get();
 
-            memcpy(avpkt->data, &byte, curr_pkt_size);
+            memcpy(avpkt->data, &byte, buffer.size());
+            buffer = {};
 
-            if (int ret = send_packet(cc, avpkt); ret == 0)
+            if (int ret = send_packet(cc, avpkt); ret != 0)
             {
-                len = curr_pkt_size;
-            }
-            else
-            {
-                util::Log("len = 0 error\n");
                 handle_error(ret);
-                len = 0;
             }
 
-            if (len < 0)
+            Wrap::AvFrame frame{};
+            int ret = avcodec_receive_frame(cc, frame);
+            if (ret != 0)
             {
-                curr_pkt_size = 0;
+                if (ret == AVERROR_EOF)
+                {
+                    util::Log(fg(fmt::color::beige), "End of file reached\n");
+                    return -2;
+                }
+
+                std::array<char, 128> error_buf{};
+                av_strerror(ret, error_buf.data(), error_buf.size());
+
+                if (ret == AVERROR(EINVAL))
+                {
+                    throw std::runtime_error(std::format("Codec is not open: {}", error_buf.data()));
+                }
+
+                // Output is not available in this state.
+                util::Log("avcodec_receive_frame: {}\n", error_buf.data());
+                continue;
+            }
+
+            if (swr)
+            {
+                const auto nb_samples = frame->nb_samples;
+                auto buf_ptr = m_produced_buf.get();
+
+                ret = swr.convert(&buf_ptr, nb_samples, frame->extended_data, nb_samples);
+
+                int buffer_used_len = ret * cc->ch_layout.nb_channels * static_cast<int>(sizeof(int16_t));
+                return buffer_used_len;
             }
             else
             {
-                if (swr)
+                int buffer_used_len = av_samples_get_buffer_size(nullptr,
+                                                                 cc->ch_layout.nb_channels,
+                                                                 frame->nb_samples,
+                                                                 manager.getFormat(), 1);
+                if (buffer_used_len < 0)
                 {
-                    curr_pkt_size -= len;
-                    Wrap::AvFrame frame{};
-                    int ret = receive_frame(cc, frame);
-                    if (ret)
-                    {
-                        const auto nb_samples = frame->nb_samples;
-                        auto buf_ptr = m_produced_buf.get();
-
-                        ret = swr.convert(&buf_ptr, nb_samples, frame->extended_data, nb_samples);
-
-                        m_buffer_used_len = ret * cc->ch_layout.nb_channels * static_cast<int>(sizeof(int16_t));
-                        return m_buffer_used_len;
-                    }
+                    std::array<char, 128> errbuf{};
+                    av_strerror(buffer_used_len, errbuf.data(), errbuf.size());
+                    util::Log("av_samples_get_buffer_size failed with: {}\n", errbuf.data());
+                    return 0;
                 }
-                else
-                {
-                    curr_pkt_size -= len;
-                    Wrap::AvFrame frame{};
-                    int ret = receive_frame(cc, frame);
-                    if (ret)
-                    {
-                        m_buffer_used_len = av_samples_get_buffer_size(nullptr,
-                                                                       cc->ch_layout.nb_channels,
-                                                                       frame->nb_samples,
-                                                                       manager.getFormat(), 1);
-                        if (m_buffer_used_len < 0)
-                        {
-                            std::array<char, 128> errbuf{};
-                            av_strerror(m_buffer_used_len, errbuf.data(), errbuf.size());
-                            util::Log("av_samples_get_buffer_size failed with: {}\n", errbuf.data());
-                            return 0;
-                        }
 
-                        memcpy(m_produced_buf.get(), frame->data[0], m_buffer_used_len);
-                        return m_buffer_used_len;
-                    }
-                }
+                memcpy(m_produced_buf.get(), frame->data[0], buffer_used_len);
+                return buffer_used_len;
             }
         }
     }
@@ -315,8 +320,6 @@ void AudioLoop::producer_loop(std::stop_token st)
                                 std::next(ptr, nr_read),
                                 std::back_inserter(m_buffer));
             }
-
-            m_buffer_used_len -= m_buffer_used_len;
         }
     }
 }

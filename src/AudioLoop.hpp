@@ -219,9 +219,6 @@ private:
     std::size_t m_position_in_bytes = 0uz;
     std::vector<std::uint8_t> m_buffer{};
 
-    int m_buffer_used_len{};
-    int curr_pkt_size{};
-
     bool m_paused{};
 };
 

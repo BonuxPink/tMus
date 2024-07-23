@@ -76,9 +76,9 @@ namespace Wrap
 
     struct AvPacket
     {
-        AvPacket(int size = 0)
+        AvPacket(std::size_t size = 0)
         {
-            if (av_new_packet(&pkt, size) != 0)
+            if (av_new_packet(&pkt, static_cast<int>(size)) != 0)
             {
                 throw std::runtime_error("av_new_packet failed");
             }
