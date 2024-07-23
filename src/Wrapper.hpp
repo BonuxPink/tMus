@@ -76,7 +76,7 @@ namespace Wrap
 
     struct AvPacket
     {
-        AvPacket(std::size_t size = 0)
+        AvPacket(std::size_t size)
         {
             if (av_new_packet(&pkt, static_cast<int>(size)) != 0)
             {
@@ -94,9 +94,19 @@ namespace Wrap
             av_packet_unref(&pkt);
         }
 
+        void reset()
+        {
+            av_packet_unref(&pkt);
+        }
+
         operator AVPacket*() { return &pkt; }
 
-        const AVPacket* operator->() noexcept
+        const AVPacket* operator->() const noexcept
+        {
+            return &pkt;
+        }
+
+        AVPacket* operator->() noexcept
         {
             return &pkt;
         }
