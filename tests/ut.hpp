@@ -2225,8 +2225,8 @@ class runner {
 struct override {};
 
 template <class = override, class...>
-//[[maybe_unused]] inline auto cfg = runner<reporter<printer>>{};// alt reporter
-[[maybe_unused]] inline auto cfg = runner<reporter_junit<printer>>{};
+[[maybe_unused]] inline auto cfg = runner<reporter<printer>>{};// alt reporter
+// [[maybe_unused]] inline auto cfg = runner<reporter_junit<printer>>{};
 
 namespace detail {
 struct tag {
