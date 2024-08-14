@@ -49,7 +49,7 @@ static std::string TrimWhitespace(std::string str)
     return str.substr(strBegin, diff);
 };
 
-IniParser::IniSection::IniSection(std::istream& f, std::string sName)
+IniSection::IniSection(std::istream& f, std::string sName)
 {
     ParseOutComment(sName);
     sName = TrimWhitespace(sName);
@@ -112,13 +112,13 @@ IniParser::IniSection::IniSection(std::istream& f, std::string sName)
     }
 }
 
-IniParser::KeyType& IniParser::IniSection::operator[](std::string_view index)
+SmartKey& IniSection::operator[](std::string_view index)
 {
     auto str = std::string{ index };
     return values[str];
 }
 
-const IniParser::KeyType& IniParser::IniSection::operator[](std::string_view index) const
+const SmartKey& IniSection::operator[](std::string_view index) const
 {
     auto end = rn::find_if(values.begin(), values.end(), [&](const auto& pair)
     {
@@ -153,7 +153,7 @@ IniParser::IniParser(std::istream& file)
     }
 }
 
-IniParser::IniSection& IniParser::operator[](std::string_view index)
+IniSection& IniParser::operator[](std::string_view index)
 {
     auto ret = rn::find_if(vec, [=](const auto& section_name)
     {
@@ -167,7 +167,7 @@ IniParser::IniSection& IniParser::operator[](std::string_view index)
     return *ret;
 };
 
-const IniParser::IniSection& IniParser::operator[](std::string_view index) const
+const IniSection& IniParser::operator[](std::string_view index) const
 {
     auto ret = rn::find_if(vec, [=](const auto& section_name)
     {
@@ -190,7 +190,7 @@ void IniParser::SaveToFile(std::string_view filename) const
         throw std::runtime_error(std::format("Failed to open file: {}", filename));
     }
 
-    auto print_variant = [](std::iostream& ios, const IniParser::KeyType& type)
+    auto print_variant = [](std::iostream& ios, const SmartKey& type)
     {
         if (std::holds_alternative<int>(type.GetValue()))
             ios << type.as<int>();

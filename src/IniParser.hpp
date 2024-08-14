@@ -24,67 +24,58 @@
 #include <variant>
 #include <string>
 
+struct SmartKey
+{
+    using VariantType = std::variant<int, std::string, float>;
+
+    explicit SmartKey() = default;
+    explicit SmartKey(auto value)
+        : m_value{ value }
+    { }
+
+    template <typename T>
+    [[nodiscard]] T as() const
+    {
+        return std::get<T>(m_value);
+    }
+
+    SmartKey& operator=(auto newvalue)
+    {
+        m_value = newvalue;
+        return *this;
+    }
+
+    [[nodiscard]] inline constexpr auto GetValue() const noexcept
+    { return m_value; }
+
+private:
+    VariantType m_value;
+};
+
+struct IniSection
+{
+    explicit(true) IniSection(std::istream& f, std::string sName);
+
+    [[nodiscard]] SmartKey& operator[](std::string_view index);
+    [[nodiscard]] const SmartKey& operator[](std::string_view index) const;
+
+    auto begin() const noexcept
+    {
+        return values.begin();
+    }
+
+    auto end() const noexcept
+    {
+        return values.end();
+    }
+
+    std::string section_name;
+    std::unordered_map<std::string, SmartKey> values;
+};
+
 class IniParser
 {
-private:
-    struct IniSection
-    {
-    private:
-        struct SmartKey
-        {
-            using VariantType = std::variant<int, std::string, float>;
-
-            SmartKey() = default;
-            explicit SmartKey(auto value)
-                : m_value{ value }
-            { }
-
-            template <typename T>
-            [[nodiscard]] T as() const
-            {
-                return std::get<T>(m_value);
-            }
-
-            SmartKey& operator=(auto newvalue)
-            {
-                m_value = newvalue;
-                return *this;
-            }
-
-            [[nodiscard]] inline constexpr auto GetValue() const noexcept
-            { return m_value; }
-
-        private:
-            VariantType m_value;
-        };
-    public:
-
-        using KeyType = SmartKey;
-
-        explicit(true) IniSection(std::istream& f, std::string sName);
-
-        [[nodiscard]] SmartKey& operator[](std::string_view index);
-        [[nodiscard]] const SmartKey& operator[](std::string_view index) const;
-
-        auto begin() const noexcept
-        {
-            return values.begin();
-        }
-
-        auto end() const noexcept
-        {
-            return values.end();
-        }
-
-        std::string section_name;
-        std::unordered_map<std::string, SmartKey> values;
-    };
-
-    std::vector<IniSection> vec;
 public:
-
-    using KeyType = IniSection::KeyType;
-
     explicit(true) IniParser(std::istream& file);
 
     [[nodiscard]] auto getSectionCount() const noexcept
@@ -96,4 +87,7 @@ public:
     [[nodiscard]] const IniSection& operator[](std::string_view index) const;
 
     void SaveToFile(std::string_view filename) const;
+
+private:
+    std::vector<IniSection> vec;
 };

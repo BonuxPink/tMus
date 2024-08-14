@@ -28,19 +28,15 @@
 
 #include <ncpp/Utilities.hh>
 
-CommandView::CommandView(ncpp::Plane& plane)
-    : ncpp::Widget(ncpp::Utilities::get_notcurses_cpp(plane))
-    , m_ncp(plane)
+CommandView::CommandView(ncpp::Plane&& plane, std::shared_ptr<CommandProcessor> proc)
+    : ncpp::Widget (ncpp::NotCurses::get_instance().get_notcurses_cpp())
+    , m_ncp(std::move(plane))
+    , m_cmdProc{ std::move(proc) }
     , m_textColor(Colors::TextColor)
 {
-    ncpp::Widget::ensure_valid_plane(plane);
-    ncpp::Widget::take_plane_ownership(plane);
-}
+    ncpp::Widget::ensure_valid_plane(m_ncp);
 
-void CommandView::init(CommandProcessor* proc) noexcept
-{
     m_commandBuffer.push_back(':');
-    m_cmdProc = proc;
 }
 
 void CommandView::search(std::string str)

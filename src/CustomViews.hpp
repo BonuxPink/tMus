@@ -48,7 +48,7 @@ public:
     using enterFunc = std::function<bool(const std::filesystem::path&)>;
     using selectFunc = std::function<bool(const std::filesystem::path&)>;
 
-    ListView(ncpp::Plane&, std::shared_ptr<Focus>);
+    ListView(ncpp::Plane&&, std::shared_ptr<Focus>);
 
     [[nodiscard]] bool hasFocus() const { return m_Focus->hasFocus(); }
     [[nodiscard]] Focus* getFocus() const { return m_Focus.get(); }
@@ -64,15 +64,19 @@ public:
     void Clear() noexcept;
 
     void setItems(ItemContainer) noexcept;
-    void setSelectCallback(const selectFunc&) noexcept;
-    void setEnterCallback(const enterFunc& f) noexcept;
+    void setSelectCallback(const selectFunc&);
+    void setEnterCallback(const enterFunc& f);
 
-    void ColorSelected() const noexcept;
+    void ColorSelected() const;
 
     void selectLibrary(std::filesystem::path&);
     void selectSong(std::filesystem::path&);
 
+    void toggleFocus() noexcept { m_Focus->toggle(); }
     [[nodiscard]] ItemContainer& getItems() noexcept { return m_items; }
+
+    auto& getCallback() { return m_enterCallback; }
+    auto* getSelection() { return &m_selectionCallback; }
 private:
     friend class PrintLine;
 
@@ -86,8 +90,8 @@ private:
     std::size_t m_itemcount{};
 
 
-    selectFunc m_selectionCallback{};                                                          // Called everytime a sellection change has been made
-    enterFunc m_enterCallback{};                                                               // Called when enter is pressed
+    selectFunc m_selectionCallback;                                                          // Called everytime a sellection change has been made
+    enterFunc m_enterCallback;                                                               // Called when enter is pressed
 
     unsigned m_selected{};                                                                     // index of selection
     unsigned m_longop{};                                                                       // columns occupied by longest option
@@ -99,6 +103,3 @@ class PrintLine
 public:
     void operator()(const ncpp::Plane&, const ListView::ItemType&, int) const noexcept;
 };
-
-bool customSelectCallback(ListView&, ListView::ItemContainer, std::filesystem::path&&);
-bool customEnterCallback(std::filesystem::path&&);

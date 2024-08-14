@@ -68,15 +68,15 @@
     return dirs;
 }
 
-SearchCommand::SearchCommand(ListView& listView, ListView& songView)
-    : m_ListView(listView)
-    , m_SongView(songView)
+SearchCommand::SearchCommand(std::shared_ptr<ListView> listView, std::shared_ptr<ListView> songView)
+    : m_ListView(std::move(listView))
+    , m_SongView(std::move(songView))
 { }
 
 bool SearchCommand::execute(std::string_view str)
 {
     std::filesystem::path found;
-    for (const auto& el : m_ListView.getItems())
+    for (const auto& el : m_ListView->getItems())
     {
         for (const auto& dir : std::filesystem::directory_iterator(el.second))
         {
@@ -97,17 +97,17 @@ bool SearchCommand::execute(std::string_view str)
     util::Log(fg(fmt::color::yellow), "Found: {}\n", found.filename().string());
 
     auto withoutFilename = found.parent_path();
-    m_ListView.selectLibrary(withoutFilename);
-    m_SongView.selectSong(found);
+    m_ListView->selectLibrary(withoutFilename);
+    m_SongView->selectSong(found);
 
 
-    if (auto focus = m_SongView.getFocus(); !focus->hasFocus())
+    if (auto focus = m_SongView->getFocus(); !focus->hasFocus())
     {
         focus->focus();
     }
 
-    m_ListView.draw();
-    m_SongView.draw();
+    m_ListView->draw();
+    m_SongView->draw();
 
     return true;
 }
@@ -118,12 +118,14 @@ bool SearchCommand::complete([[maybe_unused]] std::vector<std::uint32_t>& vec) c
     return true;
 }
 
-AddCommand::AddCommand(ListView* listView)
-    : m_ListView(listView)
+Add::Add(std::shared_ptr<ListView> listView)
+    : m_ListView(std::move(listView))
 { }
 
-bool AddCommand::execute(std::string_view str)
+bool Add::execute(std::string_view str)
 {
+    util::Log("ADD ptr: {}\n", fmt::ptr(m_ListView->getSelection()));
+
     util::Log(fg(fmt::color::coral), "AddCommand Received str: {}\n", str);
 
     std::string intermediate{ str };
@@ -144,7 +146,7 @@ bool AddCommand::execute(std::string_view str)
     return true;
 }
 
-bool AddCommand::complete(std::vector<std::uint32_t>& vec) const
+bool Add::complete(std::vector<std::uint32_t>& vec) const
 {
     auto count = std::ranges::count(vec, ' ');
     if (count > 1)
@@ -174,6 +176,31 @@ bool AddCommand::complete(std::vector<std::uint32_t>& vec) const
     }
 
     return false;
+}
+
+Play::Play(std::shared_ptr<ListView> listView, std::shared_ptr<ListView> songView)
+    : m_ListView{ std::move(listView) }
+    , m_SongView{ std::move(songView) }
+{ }
+
+bool Play::execute(std::string_view)
+{
+    if (m_ListView->hasFocus())
+    {
+        m_ListView->EnterCallback();
+    }
+    else
+    {
+        m_SongView->EnterCallback();
+    }
+
+    return true;
+}
+
+bool Pause::execute(std::string_view)
+{
+    Globals::event.SetEvent(Event::Action::PAUSE);
+    return true;
 }
 
 static void CommonPart(std::vector<std::uint32_t>& vec, std::string& DesiredDir)
@@ -270,9 +297,9 @@ static void CommonPart(std::vector<std::uint32_t>& vec, std::string& DesiredDir)
     }
 }
 
-void AddCommand::CompletePath(AddCommand::Type t, std::vector<std::uint32_t>& vec) const
+void Add::CompletePath(Add::Type t, std::vector<std::uint32_t>& vec) const
 {
-    using enum AddCommand::Type;
+    using enum Add::Type;
 
     auto OneBeforeEnd = vec.end() - 1;
     if (*OneBeforeEnd == ' ')
@@ -324,9 +351,57 @@ void AddCommand::CompletePath(AddCommand::Type t, std::vector<std::uint32_t>& ve
     }
 }
 
-Clear::Clear(ListView* l, ListView* s)
-    : m_ListView(l)
-    , m_SongView(s)
+bool Volup::execute(std::string_view)
+{
+    Globals::event.SetEvent(Event::Action::UP_VOLUME);
+    return true;
+}
+
+bool Voldown::execute(std::string_view)
+{
+    Globals::event.SetEvent(Event::Action::DOWN_VOLUME);
+    return true;
+}
+
+bool BindCommand::execute([[maybe_unused]] std::string_view command)
+{
+    util::Log(fg(fmt::color::magenta), "bind received command: {}\n", command);
+    return true;
+}
+
+bool BindCommand::complete(std::vector<std::uint32_t>&) const
+{
+    return false;
+}
+
+[[nodiscard]] bool Quit::execute(std::string_view)
+{
+    Globals::stop_request = true;
+    return true;
+}
+
+CycleFocus::CycleFocus(std::shared_ptr<ListView> listView, std::shared_ptr<ListView> songView)
+    : m_ListView{ std::move(listView) }
+    , m_SongView{ std::move(songView) }
+{ }
+
+[[nodiscard]] bool CycleFocus::execute(std::string_view)
+{
+    if (not m_ListView->hasFocus())
+    {
+        m_ListView->toggleFocus();
+    }
+    else
+    {
+        m_SongView->toggleFocus();
+    }
+
+    return true;
+}
+
+Clear::Clear(std::shared_ptr<ListView> listView, std::shared_ptr<ListView> songView)
+    : m_ListView(std::move(listView))
+    , m_SongView(std::move(songView))
 { }
 
 bool Clear::execute([[maybe_unused]] std::string_view s)
@@ -343,6 +418,66 @@ bool Clear::execute([[maybe_unused]] std::string_view s)
         playbackThread.join();
     }
 
+    return true;
+}
+
+Up::Up(std::shared_ptr<ListView> listView, std::shared_ptr<ListView> songView)
+    : m_ListView{ std::move(listView) }
+    , m_SongView{ std::move(songView) }
+{ }
+
+bool Up::execute(std::string_view)
+{
+    if (m_ListView->hasFocus())
+    {
+        m_ListView->SelectPrevItem();
+    }
+    else
+    {
+        m_SongView->SelectPrevItem();
+    }
+
+    return true;
+}
+
+Down::Down(std::shared_ptr<ListView> listView, std::shared_ptr<ListView> songView)
+    : m_ListView{ std::move(listView) }
+    , m_SongView{ std::move(songView) }
+{ }
+
+bool Down::execute(std::string_view)
+{
+    if (m_ListView->hasFocus())
+    {
+        m_ListView->SelectNextItem();
+    }
+    else
+    {
+        m_SongView->SelectNextItem();
+    }
+
+    return true;
+}
+
+Right::Right(std::shared_ptr<ListView> listView, std::shared_ptr<ListView> songView)
+    : m_ListView{ std::move(listView) }
+    , m_SongView{ std::move(songView) }
+{ }
+
+bool Right::execute(std::string_view)
+{
+    Globals::event.SetEvent(Event::Action::SEEK_FORWARDS);
+    return true;
+}
+
+Left::Left(std::shared_ptr<ListView> listView, std::shared_ptr<ListView> songView)
+    : m_ListView{ std::move(listView) }
+    , m_SongView{ std::move(songView) }
+{ }
+
+bool Left::execute(std::string_view)
+{
+    Globals::event.SetEvent(Event::Action::SEEK_BACKWARDS);
     return true;
 }
 
@@ -488,4 +623,15 @@ CommandProcessor::StrPair CommandProcessor::processArguments(std::string_view CM
     std::string arguments;
     std::ranges::move( CMD | std::views::drop_while([](char ch){ return ch != ' '; }) | std::views::drop(1), std::back_inserter(arguments));
     return { cmdName, arguments };
+}
+
+std::shared_ptr<Command> CommandProcessor::findCommand(std::string_view cmd) const
+{
+    auto it = m_Commands.find(cmd);
+    if (it != m_Commands.end())
+    {
+        return it->second;
+    }
+
+    return nullptr;
 }

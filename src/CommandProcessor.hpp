@@ -22,7 +22,6 @@
 #include "CustomViews.hpp"
 #include "util.hpp"
 
-#include <span>
 #include <string_view>
 #include <unordered_map>
 
@@ -37,29 +36,36 @@ struct Arguments
 
 struct Command
 {
-    virtual ~Command() = default;
+    Command()                           = default;
+    Command(const Command &)            = default;
+    Command(Command &&)                 = delete;
+    Command &operator=(const Command &) = default;
+    Command &operator=(Command &&)      = delete;
+
+    virtual ~Command()                  = default;
 
     virtual bool execute(std::string_view) = 0;
-    [[nodiscard]] virtual bool complete(std::vector<std::uint32_t>&) const = 0;
+    [[nodiscard]] virtual bool complete(std::vector<std::uint32_t> &) const = 0;
 };
 
 struct SearchCommand : public Command
 {
-    explicit SearchCommand(ListView&, ListView&);
+    explicit SearchCommand(std::shared_ptr<ListView>, std::shared_ptr<ListView>);
     bool execute(std::string_view) override;
     [[nodiscard]] bool complete(std::vector<std::uint32_t>&) const override;
 
 private:
-    ListView& m_ListView;
-    ListView& m_SongView;
+    std::shared_ptr<ListView> m_ListView;
+    std::shared_ptr<ListView> m_SongView;
 };
 
-struct AddCommand : public Command
+struct Add : public Command
 {
-    explicit AddCommand(ListView*);
+    explicit Add(std::shared_ptr<ListView>);
     bool execute(std::string_view) override;
     [[nodiscard]] bool complete(std::vector<std::uint32_t>&) const override;
 
+    std::shared_ptr<ListView> m_ListView;
 private:
     enum class Type
     {
@@ -68,7 +74,77 @@ private:
     };
 
     void CompletePath(Type, std::vector<std::uint32_t>&) const;
-    ListView* m_ListView;
+};
+
+struct Play : public Command
+{
+    explicit Play(std::shared_ptr<ListView>, std::shared_ptr<ListView>);
+
+    bool execute(std::string_view) override;
+    [[nodiscard]] bool complete(std::vector<std::uint32_t>&) const override
+    { return false; }
+
+private:
+    std::shared_ptr<ListView> m_ListView;
+    std::shared_ptr<ListView> m_SongView;
+};
+
+struct Pause : public Command
+{
+    bool execute(std::string_view) override;
+    [[nodiscard]] bool complete(std::vector<std::uint32_t>&) const override
+    { return false; }
+};
+
+struct Volup : public Command
+{
+    bool execute(std::string_view) override;
+    [[nodiscard]] bool complete(std::vector<std::uint32_t>&) const override
+    { return false; }
+};
+
+struct Voldown : public Command
+{
+    bool execute(std::string_view) override;
+    [[nodiscard]] bool complete(std::vector<std::uint32_t>&) const override
+    { return false; }
+};
+
+struct BindCommand : public Command
+{
+    explicit BindCommand() = default;
+    ~BindCommand() override = default;
+
+    BindCommand(const BindCommand&) = delete;
+    BindCommand(BindCommand&&) = delete;
+
+    BindCommand& operator=(const BindCommand&) = delete;
+    BindCommand& operator=(BindCommand&&) = delete;
+
+    [[nodiscard]] bool execute(std::string_view) override;
+    [[nodiscard]] bool complete(std::vector<std::uint32_t>&) const override;
+
+    void BindKeys();
+};
+
+struct Quit : public Command
+{
+    [[nodiscard]] bool execute(std::string_view) override;
+    [[nodiscard]] bool complete(std::vector<std::uint32_t>&) const noexcept override
+    { return false; }
+};
+
+struct CycleFocus : public Command
+{
+    explicit CycleFocus(std::shared_ptr<ListView>, std::shared_ptr<ListView>);
+
+    [[nodiscard]] bool execute(std::string_view) override;
+    [[nodiscard]] bool complete(std::vector<std::uint32_t>&) const noexcept override
+    { return false; }
+
+private:
+    std::shared_ptr<ListView> m_ListView;
+    std::shared_ptr<ListView> m_SongView;
 };
 
 struct HelloWorld : public Command
@@ -87,7 +163,7 @@ struct HelloWorld : public Command
 
 struct Clear : public Command
 {
-    explicit Clear(ListView*, ListView*);
+    explicit Clear(std::shared_ptr<ListView>, std::shared_ptr<ListView>);
     bool execute(std::string_view) override;
 
     [[nodiscard]] bool complete(std::vector<std::uint32_t>&) const noexcept override
@@ -96,24 +172,76 @@ struct Clear : public Command
     }
 
 private:
-    ListView* m_ListView{};
-    ListView* m_SongView{};
+    std::shared_ptr<ListView> m_ListView;
+    std::shared_ptr<ListView> m_SongView;
+};
+
+struct Up : public Command
+{
+    explicit Up(std::shared_ptr<ListView>, std::shared_ptr<ListView>);
+
+    bool execute(std::string_view) override;
+    [[nodiscard]] bool complete(std::vector<std::uint32_t>&) const noexcept override
+    { return false; }
+
+private:
+    std::shared_ptr<ListView> m_ListView;
+    std::shared_ptr<ListView> m_SongView;
+};
+
+struct Down : public Command
+{
+    explicit Down(std::shared_ptr<ListView>, std::shared_ptr<ListView>);
+
+    bool execute(std::string_view) override;
+    [[nodiscard]] bool complete(std::vector<std::uint32_t>&) const noexcept override
+    { return false; }
+
+private:
+    std::shared_ptr<ListView> m_ListView;
+    std::shared_ptr<ListView> m_SongView;
+};
+
+struct Right : public Command
+{
+    explicit Right(std::shared_ptr<ListView>, std::shared_ptr<ListView>);
+    bool execute(std::string_view) override;
+    [[nodiscard]] bool complete(std::vector<std::uint32_t>&) const noexcept override
+    { return false; }
+
+private:
+    std::shared_ptr<ListView> m_ListView;
+    std::shared_ptr<ListView> m_SongView;
+};
+
+struct Left : public Command
+{
+    explicit Left(std::shared_ptr<ListView>, std::shared_ptr<ListView>);
+    bool execute(std::string_view) override;
+    [[nodiscard]] bool complete(std::vector<std::uint32_t>&) const noexcept override
+    { return false; }
+
+private:
+    std::shared_ptr<ListView> m_ListView;
+    std::shared_ptr<ListView> m_SongView;
 };
 
 struct CommandProcessor
 {
 public:
     void registerCommand(std::string_view, std::shared_ptr<Command>) noexcept;
+
+    std::shared_ptr<Command> findCommand(std::string_view cmd) const;
     std::optional<std::string> processCommand(std::string_view CMD);
     std::optional<std::shared_ptr<Command>> getCommandByName(std::string_view);
 
-    std::string getCommandName(std::string_view) const noexcept;
+    [[nodiscard]] std::string getCommandName(std::string_view) const noexcept;
     bool completeNext(std::vector<std::uint32_t>&) const noexcept;
 
 private:
+    std::unordered_map<std::string_view, std::shared_ptr<Command>> m_Commands;
+
     using StrPair = std::pair<std::string, std::string>;
     [[nodiscard]] StrPair processArguments(std::string_view) const noexcept;
     [[nodiscard]] std::string FindNeedle(std::vector<std::string_view>& Haystack, std::string_view needle) const noexcept;
-
-    std::unordered_map<std::string_view, std::shared_ptr<Command>> m_Commands;
 };

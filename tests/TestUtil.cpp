@@ -17,24 +17,22 @@
  * along with tMus. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "ut.hpp"
+#include "util.hpp"
+#include <filesystem>
+#include <print>
 
-#include "CustomViews.hpp"
-#include "CommandView.hpp"
+using namespace boost::ut;
 
-#include <functional>
-#include <ncpp/NotCurses.hh>
-#include <variant>
-#include <vector>
+namespace fs = std::filesystem;
 
-class LoopComponent
+int main()
 {
-public:
-    using ViewLike = std::variant<CommandView, ListView>;
-    LoopComponent(std::vector<ViewLike>& vec);
+    "GetUserConfigDir"_test = []
+    {
+        expect (getenv("HOME") != nullptr or getenv("XDG_CONFIG_HOME") != nullptr);
+        auto dir = util::GetUserConfigDir();
 
-    void loop();
-
-private:
-    std::vector<ViewLike>& m_vec;
-};
+        expect (fs::exists(dir));
+    };
+}

@@ -22,7 +22,6 @@
 #include "CustomViews.hpp"
 
 #include <filesystem>
-#include <ranges>
 #include <stdexcept>
 
 #include <notcurses/nckeys.h>
@@ -30,15 +29,17 @@
 
 #include <ncpp/Utilities.hh>
 #include <ncpp/Widget.hh>
+#include <utility>
 
-ListView::ListView(ncpp::Plane& plane, std::shared_ptr<Focus> focus)
-    : ncpp::Widget(ncpp::Utilities::get_notcurses_cpp(plane))
-    , m_ncp(plane)
+ListView::ListView(ncpp::Plane&& plane, std::shared_ptr<Focus> focus)
+    : ncpp::Widget(ncpp::NotCurses::get_instance().get_notcurses_cpp())
+    , m_ncp(std::move(plane))
     , m_Focus(std::move(focus))
-    , m_itemcount(m_items.size())
 {
-    ncpp::Widget::ensure_valid_plane(plane);
-    ncpp::Widget::take_plane_ownership(plane);
+    util::Log("Has focus: {}\n", m_Focus->m_hasFocus);
+    ncpp::Widget::ensure_valid_plane(m_ncp);
+
+    util::Log(fg(fmt::color::green), "CALLBACKS: {} {}\n", (bool)m_enterCallback, (bool)m_selectionCallback);
 }
 
 void ListView::draw()
@@ -117,7 +118,12 @@ void ListView::draw()
 bool ListView::handle_input(const ncinput& input) noexcept
 {
     if (!hasFocus())
+    {
+        util::Log("Not has focus\n");
         return false;
+    }
+
+    util::Log("Has focus\n");
 
     if (input.id == 'q')
     {
@@ -125,14 +131,11 @@ bool ListView::handle_input(const ncinput& input) noexcept
         return true;
     }
 
-    if (m_itemcount <= 0)
-        return false;
-
-    if (input.id == NCKEY_UP)
-    {
-        SelectPrevItem();
-        return true;
-    }
+    // if (input.id == NCKEY_UP)
+    // {
+    //     SelectPrevItem();
+    //     return true;
+    // }
 
     else if (input.id == NCKEY_DOWN)
     {
@@ -332,7 +335,7 @@ void ListView::PrintItems()
 
 void ListView::setItems(ItemContainer items) noexcept
 {
-    m_items = std::forward<ItemContainer>(items);
+    m_items = std::move(items);
     m_itemcount = m_items.size();
     m_selected = 0;
     m_startdisp = 0;
@@ -346,7 +349,7 @@ void ListView::setItems(ItemContainer items) noexcept
     draw();
 }
 
-void ListView::ColorSelected() const noexcept
+void ListView::ColorSelected() const
 {
     if (m_Focus->hasFocus())
     {
@@ -365,12 +368,12 @@ void ListView::ColorSelected() const noexcept
     std::invoke( PrintLine{}, m_ncp, item, yoff );
 }
 
-void ListView::setSelectCallback(const selectFunc& f) noexcept
+void ListView::setSelectCallback(const selectFunc& f)
 {
     m_selectionCallback = f;
 }
 
-void ListView::setEnterCallback(const enterFunc& f) noexcept
+void ListView::setEnterCallback(const enterFunc& f)
 {
     m_enterCallback = f;
 }
@@ -435,28 +438,4 @@ void PrintLine::operator()(const ncpp::Plane& ncp, const ListView::ItemType& ite
     {
         ncp.putc("…");
     }
-}
-
-bool customSelectCallback(ListView& albumView, std::filesystem::path&& path)
-{
-    util::Log("Select callback\n");
-    std::vector<ListView::ItemType> songVec;
-    for (const auto& file : std::filesystem::directory_iterator(path))
-    {
-        if (!std::filesystem::is_regular_file(file))
-            continue;
-
-        auto ext = file.path().extension();
-        if (ext == ".cue" || ext == ".jpg" || ext == ".png")
-            continue;
-
-        unsigned cols = (unsigned)ncstrwidth(file.path().filename().c_str(), nullptr, nullptr);
-        songVec.push_back({ cols, file.path() });
-    }
-
-    albumView.Reset();
-    albumView.draw();
-
-
-    return true;
 }

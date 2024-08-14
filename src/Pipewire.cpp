@@ -364,7 +364,8 @@ void Pipewire::set_volume(float percent) noexcept
     if (!m_loop)
         return;
 
-    std::vector<float> volume(m_channels, percent);
+    std::array<float, 8> volume{};
+    volume.fill(percent);
 
     pw_thread_loop_lock(m_loop);
     pw_stream_set_control(m_stream, SPA_PROP_channelVolumes, m_channels, volume.data(), nullptr);

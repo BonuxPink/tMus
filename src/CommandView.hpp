@@ -21,19 +21,19 @@
 
 #include "CommandProcessor.hpp"
 
-#include <memory>
 #include <ncpp/NotCurses.hh>
 
 class CommandView : public ncpp::Widget
 {
 public:
-    CommandView(ncpp::Plane&);
+    CommandView(ncpp::Plane&&, std::shared_ptr<CommandProcessor>);
 
     void draw();
     void search(std::string str);
     bool handle_input(const ncinput&) noexcept;
 
-    void init(CommandProcessor* proc) noexcept;
+    [[nodiscard]] const std::shared_ptr<CommandProcessor> getCmdProc() const noexcept
+    { return m_cmdProc; }
 
 private:
 
@@ -51,7 +51,7 @@ private:
     [[nodiscard]] std::string u32vecToString(const std::vector<std::uint32_t>&) const noexcept;
 
     ncpp::Plane m_ncp;
-    CommandProcessor* m_cmdProc{};
+    std::shared_ptr<CommandProcessor> m_cmdProc;
 
     std::vector<std::uint32_t> m_commandBuffer;
 

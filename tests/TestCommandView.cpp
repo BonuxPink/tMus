@@ -25,7 +25,10 @@ int main()
         expect (stdPlane.get() != nullptr);
 
         ncpp::Plane plane{ dimy, dimx, static_cast<int>(dimy), 0, nullptr, nullptr };
-        CommandView view{ plane };
+
+        auto com = std::make_shared<CommandProcessor>();
+
+        CommandView view{ std::move(plane), com };
 
         view.draw();
 

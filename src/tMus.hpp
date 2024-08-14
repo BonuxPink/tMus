@@ -19,8 +19,28 @@
 
 #pragma once
 
-namespace tMus
+#include <array>
+#include <memory>
+
+#include "CommandView.hpp"
+#include "Config.hpp"
+
+class tMus
 {
-    void Init();
-    void InitLog();
-}
+public:
+    tMus(const std::shared_ptr<FocusManager>&);
+    void loop();
+
+    static void Init();
+    static void InitLog();
+
+    using ViewLike = std::variant<std::shared_ptr<CommandView>, std::shared_ptr<ListView>>;
+
+    [[nodiscard]] auto& GetViewRef() const noexcept(true)
+    { return m_views[0]; }
+
+
+private:
+    std::array<ViewLike, 3> m_views;
+    std::shared_ptr<Config> cfg;
+};

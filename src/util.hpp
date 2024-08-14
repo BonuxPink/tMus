@@ -74,4 +74,6 @@ namespace util
 
     template<typename... Args>
     Log(fmt::format_string<Args...>, Args&&...) -> Log<Args...>;
+
+    std::filesystem::path GetUserConfigDir();
 }
