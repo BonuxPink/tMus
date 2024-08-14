@@ -384,7 +384,6 @@ void AudioLoop::HandleEvent()
             break;
         case PAUSE:
             m_paused = !m_paused;
-            // SDL_PauseAudioDevice(manager.getAudioDeviceID(), m_paused);
             break;
         }
         Globals::event.m_EventHappened = false;

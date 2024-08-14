@@ -152,9 +152,6 @@ public:
     [[nodiscard]] int getStreamIndex() const noexcept
     { return m_streamIndex; }
 
-    // [[nodiscard]] SDL_AudioDeviceID getAudioDeviceID() const noexcept
-    // { return m_audio_deviceID; }
-
     [[nodiscard]] AVSampleFormat getFormat() const noexcept
     {
         return m_audioSettings.fmt;
