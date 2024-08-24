@@ -39,7 +39,7 @@ ListView::ListView(ncpp::Plane&& plane, std::shared_ptr<Focus> focus)
     util::Log("Has focus: {}\n", m_Focus->m_hasFocus);
     ncpp::Widget::ensure_valid_plane(m_ncp);
 
-    util::Log(fg(fmt::color::green), "CALLBACKS: {} {}\n", (bool)m_enterCallback, (bool)m_selectionCallback);
+    util::Log(color::green, "CALLBACKS: {} {}\n", (bool)m_enterCallback, (bool)m_selectionCallback);
 }
 
 void ListView::draw()
@@ -47,7 +47,7 @@ void ListView::draw()
     unsigned dimy = 0, dimx = 0;
     m_ncp.get_dim(dimy, dimx);
     static int draw = 0;
-    util::Log(fg(fmt::color::teal), "Draw---------------------------{}\n", draw++);
+    util::Log(color::teal, "Draw---------------------------{}\n", draw++);
     m_ncp.get_dim(dimy, dimx);
 
     m_ncp.cursor_move(1, 1);
@@ -67,7 +67,7 @@ void ListView::draw()
     {
         if (!m_ncp.cursor_move(yoff, static_cast<int>(dimx) - 1))
         {
-            util::Log(fg(fmt::color::yellow), "Failed to move cursor y:{}:{} x:{}:{}\n", yoff, dimy, dimx, dimx);
+            util::Log(color::yellow, "Failed to move cursor y:{}:{} x:{}:{}\n", yoff, dimy, dimx, dimx);
             return;
         }
 

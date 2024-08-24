@@ -25,6 +25,7 @@
 #include "util.hpp"
 #include "Factories.hpp"
 
+#include <algorithm>
 #include <ncpp/NotCurses.hh>
 #include <fcntl.h>
 
@@ -32,7 +33,7 @@ static void SetupCallbacks(ListView& albumViewRef, ListView& songViewRef)
 {
     albumViewRef.setSelectCallback([&songViewRef](const std::filesystem::path& path)
     {
-        util::Log(fg(fmt::color::moccasin), "album callback\n");
+        util::Log(color::moccasin, "album callback\n");
         std::vector<ListView::ItemType> songVec;
         for (const auto& file : std::filesystem::directory_iterator(path))
         {
@@ -57,7 +58,7 @@ static void SetupCallbacks(ListView& albumViewRef, ListView& songViewRef)
 
     songViewRef.setEnterCallback([&](const std::filesystem::path& path)
     {
-        util::Log(fg(fmt::color::moccasin), "song callback\n");
+        util::Log(color::moccasin, "song callback\n");
         auto starter = [audio_path = path](std::stop_token tkn)
         {
             try
@@ -67,15 +68,15 @@ static void SetupCallbacks(ListView& albumViewRef, ListView& songViewRef)
             }
             catch (const std::runtime_error& e)
             {
-                util::Log(fg(fmt::color::red), "Runtime error: {}", e.what());
+                util::Log(color::red, "Runtime error: {}", e.what());
             }
             catch (const std::exception& e)
             {
-                util::Log(fg(fmt::color::red), "Exception: ", e.what());
+                util::Log(color::red, "Exception: ", e.what());
             }
             catch (...)
             {
-                util::Log(fg(fmt::color::red), "Unhandled exception caught\n");
+                util::Log(color::red, "Unhandled exception caught\n");
             }
         };
 
@@ -148,7 +149,7 @@ static ncinput GetKeyPress()
 {
     ncinput ni;
 
-    util::Log(fg(fmt::color::yellow), "----------------------------------\n");
+    util::Log(color::yellow, "----------------------------------\n");
 
     notcurses_get_blocking(ncpp::NotCurses::get_instance().get_notcurses(), &ni);
     Start = std::chrono::high_resolution_clock::now();
@@ -170,7 +171,7 @@ void tMus::loop()
                 break;
 
         Renderer::Render();
-        util::Log(fg(fmt::color::green), "Frame: {} in {}\n", count++, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - Start));
+        util::Log(color::green, "Frame: {} in {}\n", count++, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - Start));
     }
 }
 
@@ -179,7 +180,7 @@ void tMus::loop()
     {
         std::array<char, 1024> buf{0};
         vsnprintf(buf.data(), buf.size(), fmt, args);
-        util::Log(fg(fmt::color::lavender_blush), "{}", buf.data());
+        util::Log(color::lavender_blush, "{}", buf.data());
 
     };
 #endif

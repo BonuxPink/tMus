@@ -22,6 +22,7 @@
 #include "globals.hpp"
 #include "util.hpp"
 
+#include <algorithm>
 #include <exception>
 #include <filesystem>
 #include <optional>
@@ -94,7 +95,7 @@ bool SearchCommand::execute(std::string_view str)
     if (found.empty())
         return false;
 
-    util::Log(fg(fmt::color::yellow), "Found: {}\n", found.filename().string());
+    util::Log(color::yellow, "Found: {}\n", found.filename().string());
 
     auto withoutFilename = found.parent_path();
     m_ListView->selectLibrary(withoutFilename);
@@ -124,9 +125,9 @@ Add::Add(std::shared_ptr<ListView> listView)
 
 bool Add::execute(std::string_view str)
 {
-    util::Log("ADD ptr: {}\n", fmt::ptr(m_ListView->getSelection()));
+    util::Log("ADD ptr: {}\n", reinterpret_cast<void*>(m_ListView->getSelection()));
 
-    util::Log(fg(fmt::color::coral), "AddCommand Received str: {}\n", str);
+    util::Log(color::coral, "AddCommand Received str: {}\n", str);
 
     std::string intermediate{ str };
     if (!str.empty() && str[0] == '~')
@@ -347,7 +348,7 @@ void Add::CompletePath(Add::Type t, std::vector<std::uint32_t>& vec) const
     }
     else
     {
-        util::Log(fg(fmt::color::red), "Should not be possible\n");
+        util::Log(color::red, "Should not be possible\n");
     }
 }
 
@@ -365,7 +366,7 @@ bool Voldown::execute(std::string_view)
 
 bool BindCommand::execute([[maybe_unused]] std::string_view command)
 {
-    util::Log(fg(fmt::color::magenta), "bind received command: {}\n", command);
+    util::Log(color::magenta, "bind received command: {}\n", command);
     return true;
 }
 
@@ -501,10 +502,10 @@ std::optional<std::string> CommandProcessor::processCommand(std::string_view CMD
             return {};
         }
 
-        return fmt::format("Incorrect argument: {}", arguments);
+        return std::format("Incorrect argument: {}", arguments);
     }
 
-    return fmt::format("Could not find '{}' command", commandName);
+    return std::format("Could not find '{}' command", commandName);
 }
 
 std::optional<std::shared_ptr<Command>> CommandProcessor::getCommandByName(std::string_view str)

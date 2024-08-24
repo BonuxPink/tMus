@@ -56,7 +56,7 @@ namespace Wrap
         if (!packet)
         {
             util::Log("Failed to allocate packet\n");
-            throw std::runtime_error(fmt::format("Error occurred while allocating packet {}\n", AVERROR(ENOMEM)));
+            throw std::runtime_error(std::format("Error occurred while allocating packet {}\n", AVERROR(ENOMEM)));
         }
 
         return packet;

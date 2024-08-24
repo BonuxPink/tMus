@@ -19,6 +19,7 @@
 
 #include "Pipewire.hpp"
 #include "util.hpp"
+#include <cmath>
 
 #define PW_KEY_NODE_RATE "node.rate"
 

@@ -60,18 +60,18 @@ int main() try
         playbackThread.join();
     }
 
-    util::Log(fg(fmt::color::green), "Program exiting\n");
+    util::Log(color::green, "Program exiting\n");
     return EXIT_SUCCESS;
 }
 catch (const std::runtime_error& e)
 {
-    util::Log(fg(fmt::color::red), "Exception caught with: {}\n", e.what());
+    util::Log(color::red, "Exception caught with: {}\n", e.what());
 }
 catch (const std::exception& e)
 {
-    util::Log(fg(fmt::color::red), "Exception caught with: {}\n", e.what());
+    util::Log(color::red, "Exception caught with: {}\n", e.what());
 }
 catch (...)
 {
-    util::Log(fg(fmt::color::red), "Unknown exception caught\n");
+    util::Log(color::red, "Unknown exception caught\n");
 }

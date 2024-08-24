@@ -25,6 +25,7 @@
 #include "util.hpp"
 
 #include <filesystem>
+#include <thread>
 #include <stop_token>
 
 extern "C"
@@ -52,7 +53,7 @@ inline const auto handle_error = [](int ret)
         if (r < 0)
             throw std::runtime_error("av_strerror failed or did not find a description for error\n");
         else
-            throw std::runtime_error(fmt::format("Error {}\n", errBuff.data()));
+            throw std::runtime_error(std::format("Error {}\n", errBuff.data()));
     }
 };
 
@@ -92,14 +93,13 @@ public:
                                         &cc.ch_layout, cc.sample_fmt, cc.sample_rate,
                                         0, nullptr);
 
-            util::Log(fg(fmt::color::crimson), "Target fmt: {}, freq: {}\n",
+            util::Log(color::crimson, "Target fmt: {}, freq: {}\n",
                     static_cast<int>(audio_settings.fmt), audio_settings.freq);
-            util::Log(fg(fmt::color::deep_pink), "Codec fmt: {}, freq: {}\n",
+            util::Log(color::deep_pink, "Codec fmt: {}, freq: {}\n",
                     static_cast<int>(cc.sample_fmt), cc.sample_rate);
 
             if (ret != 0)
-                throw std::runtime_error(fmt::format(fg(fmt::color::red),
-                                                    "Error swr_alloc_set_opts2 retruned: {}"));
+                throw std::runtime_error(std::format("Error swr_alloc_set_opts2 retruned: {}", ret));
 
             ret = swr_init(m_swr_ctx);
             if (ret < 0)

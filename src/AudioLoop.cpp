@@ -44,10 +44,10 @@ void AudioFileManager::open_and_setup(const std::filesystem::path& filename)
         av_dict_free(&opt);
         std::array<char, AV_ERROR_MAX_STRING_SIZE> errBuff { 0 };
 
-        util::Log(fg(fmt::color::yellow), "avformat_open_input: error code: {}, filename: {}, error msg: {}, errno: {}\n",
+        util::Log(color::yellow, "avformat_open_input: error code: {}, filename: {}, error msg: {}, errno: {}\n",
                   err, filename.string(), av_make_error_string(errBuff.data(), AV_ERROR_MAX_STRING_SIZE, err), strerror(errno));
 
-        throw std::runtime_error(fmt::format("Error avformat_open_input, with code: {}, filename: {}, errmsg: {}", err, filename.string(), errBuff.data()));
+        throw std::runtime_error(std::format("Error avformat_open_input, with code: {}, filename: {}, errmsg: {}", err, filename.string(), errBuff.data()));
     }
     av_dict_free(&opt);
 
@@ -69,7 +69,7 @@ void AudioFileManager::stream_open()
     int ret = avcodec_parameters_to_context(m_ctx_data->codec_ctx.get(), m_ctx_data->format_ctx->streams[m_streamIndex]->codecpar);
     if (ret < 0)
     {
-        throw std::runtime_error(fmt::format("avcodec_parameters_to_context failed with code: {}", ret));
+        throw std::runtime_error(std::format("avcodec_parameters_to_context failed with code: {}", ret));
     }
 
     m_ctx_data->codec_ctx->pkt_timebase = m_ctx_data->format_ctx->streams[m_streamIndex]->time_base;
@@ -117,11 +117,11 @@ void AudioFileManager::find_stream()
 
     if (AVERROR_STREAM_NOT_FOUND == m_streamIndex)
     {
-        throw std::runtime_error(fmt::format("No streams found in {}\n", m_ctx_data->format_ctx->url));
+        throw std::runtime_error(std::format("No streams found in {}\n", m_ctx_data->format_ctx->url));
     }
     else if (AVERROR_DECODER_NOT_FOUND == m_streamIndex)
     {
-        throw std::runtime_error(fmt::format("Decoder not found in {}\n", m_ctx_data->format_ctx->url));
+        throw std::runtime_error(std::format("Decoder not found in {}\n", m_ctx_data->format_ctx->url));
     }
 
     if (m_streamIndex < 0)
@@ -225,7 +225,7 @@ int AudioLoop::FillAudioBuffer()
         {
             if (ret == AVERROR_EOF)
             {
-                util::Log(fg(fmt::color::beige), "End of file reached\n");
+                util::Log(color::beige, "End of file reached\n");
                 return -2;
             }
 
@@ -339,7 +339,7 @@ void AudioLoop::handleSeekRequest(std::int64_t offset)
         int ret = avformat_seek_file(m_ctx_data.format_ctx.get(), -1, seek_min, seek_target * AV_TIME_BASE, seek_max, 0);
         if (ret < 0)
         {
-            util::Log(fg(fmt::color::red), "Seek failed\n");
+            util::Log(color::red, "Seek failed\n");
         }
 
         if (seek_target == 0)

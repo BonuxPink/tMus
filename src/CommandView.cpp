@@ -51,7 +51,7 @@ void CommandView::search(std::string str)
 
     if (!m_ncp.cursor_move(0, 0))
     {
-        util::Log(fg(fmt::color::red), "Cursor false\n");
+        util::Log(color::red, "Cursor false\n");
 
     }
 
@@ -73,7 +73,7 @@ void CommandView::draw()
 
     if (!m_ncp.cursor_move(0, 0))
     {
-        util::Log(fg(fmt::color::red), "Cursor false\n");
+        util::Log(color::red, "Cursor false\n");
     }
 
     m_ncp.set_channels((std::uint64_t)ncchannels_bchannel(m_textColor) << 32u | ncchannels_fchannel(m_textColor));
@@ -141,7 +141,7 @@ bool CommandView::handle_input(const ncinput& ni) noexcept
     }
     else if (ni.utf8[0] == ':')
     {
-        util::Log(fg(fmt::color::teal), "pressed ':'\n");
+        util::Log(color::teal, "pressed ':'\n");
         m_focus = true;
         draw();
         return true;
@@ -149,7 +149,7 @@ bool CommandView::handle_input(const ncinput& ni) noexcept
 
     else if (ni.utf8[0] == '/') // '/' is a special command
     {
-        util::Log(fg(fmt::color::yellow), "/ pressed\n");
+        util::Log(color::yellow, "/ pressed\n");
         m_focus = true;
         m_search = true;
         m_commandBuffer[0] = '/';
@@ -248,7 +248,7 @@ void CommandView::ReportError(std::string_view error) noexcept
 
     disableCursor();
 
-    auto str = fmt::format("Error: {}", error);
+    auto str = std::format("Error: {}", error);
     for (const auto c : str)
     {
         m_ncp.putc(c);

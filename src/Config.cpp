@@ -107,7 +107,7 @@ bool Config::ProcessKeybinding(ncinput ni)
     {
         if (elem.key == id)
         {
-            util::Log(fg(fmt::color::green), "Func\n");
+            util::Log(color::green, "Func\n");
             elem.cmd->execute("");
             return true;
         }

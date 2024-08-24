@@ -21,7 +21,6 @@
 #include "Colors.hpp"
 #include "Renderer.hpp"
 
-#include <fmt/format.h>
 #include <ncpp/Utilities.hh>
 
 void StatusView::draw(std::size_t time) const
@@ -49,11 +48,11 @@ void StatusView::draw(std::size_t time) const
 
         if (hours < 1)
         {
-            return fmt::format("{:02}:{:02}", minutes, secs);
+            return std::format("{:02}:{:02}", minutes, secs);
         }
         else
         {
-            return fmt::format("{:02}:{:02}:{:02}", hours, minutes, secs);
+            return std::format("{:02}:{:02}:{:02}", hours, minutes, secs);
         }
     };
 
@@ -61,7 +60,7 @@ void StatusView::draw(std::size_t time) const
     const auto durationStr      = secondsToTime(static_cast<int>(m_ctx_data->format_ctx->duration / AV_TIME_BASE));
     const auto currentSecondStr = secondsToTime(static_cast<int>(seconds));
 
-    const auto filename = fmt::format("{} > {} / {}", m_url, currentSecondStr, durationStr);
+    const auto filename = std::format("{} > {} / {}", m_url, currentSecondStr, durationStr);
     const auto* cStr    = filename.c_str();
 
     std::size_t sizeInBytes{ 0 };

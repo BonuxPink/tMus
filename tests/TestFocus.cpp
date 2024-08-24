@@ -21,11 +21,6 @@
 
 #include <ncpp/NotCurses.hh>
 #include <notcurses/notcurses.h>
-#include <utility>
-
-#include <fmt/core.h>
-#include <fmt/format.h>
-
 #include "FocusManager.hpp"
 
 using namespace boost::ut;

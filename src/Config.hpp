@@ -37,7 +37,7 @@ struct Config
     Config& operator=(const Config&) = delete;
     Config& operator=(Config&&) = delete;
 
-    Config(std::filesystem::path ConfigPath, std::shared_ptr<CommandProcessor>);
+    explicit Config(std::filesystem::path ConfigPath, std::shared_ptr<CommandProcessor>);
 
     using MyVec = std::vector<std::pair<std::string, SmartKey>>;
     MyVec getKeybindings() const noexcept { return funcs; }
