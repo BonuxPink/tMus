@@ -128,20 +128,9 @@ tMus::tMus(const std::shared_ptr<FocusManager>& manager)
                    *std::get<std::shared_ptr<ListView>>(songViewRef));
 }
 
-struct ViewVisitor final
 {
-    explicit ViewVisitor(ncinput& ni)
-        : m_ni(ni)
-    { }
 
-    bool operator ()(auto& v)
-    {
-        return v->handle_input(m_ni);
-    }
 
-private:
-    ncinput& m_ni;
-};
 
 static std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> Start{};
 
