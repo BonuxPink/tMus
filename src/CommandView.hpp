@@ -32,6 +32,9 @@ public:
     void search(std::string str);
     bool handle_input(const ncinput&) noexcept;
 
+    [[nodiscard]] bool isFocused() const noexcept
+    { return m_focus; }
+
     [[nodiscard]] const std::shared_ptr<CommandProcessor> getCmdProc() const noexcept
     { return m_cmdProc; }
 

@@ -128,39 +128,46 @@ tMus::tMus(const std::shared_ptr<FocusManager>& manager)
                    *std::get<std::shared_ptr<ListView>>(songViewRef));
 }
 
-{
-
-
-
-static std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> Start{};
-
-static ncinput GetKeyPress()
-{
-    ncinput ni;
-
-    util::Log(color::yellow, "----------------------------------\n");
-
-    notcurses_get_blocking(ncpp::NotCurses::get_instance().get_notcurses(), &ni);
-    Start = std::chrono::high_resolution_clock::now();
-    util::Log("Start: {}\n", Start);
-    return ni;
-}
-
 void tMus::loop()
 {
+    using namespace std::chrono;
+
     Renderer::Render(); // Initial render
 
-    static int count = 0;
+    int count = 0;
+
+    auto* notcurses = ncpp::NotCurses::get_instance().get_notcurses();
+
     while (!Globals::stop_request)
     {
-        auto input = GetKeyPress();
-        [[maybe_unused]] bool vis = cfg->ProcessKeybinding(input);
+        util::Log(color::yellow, "----------------------------------\n");
+
+        ncinput ni;
+        std::uint32_t input = notcurses_get_blocking(notcurses, &ni);
+
+        // Currently we don't want to handle 'Release' event.
+        if (ni.evtype == ncpp::EvType::Release)
+            continue;
+
+        // Get the time
+        auto Start{ high_resolution_clock::now() };
+
+        const auto& cmdView = std::get<std::shared_ptr<CommandView>>(m_views[0]);
+        if (input == ':' || cmdView->isFocused())
+        {
+            cmdView->handle_input(ni);
+        }
+        else
+        {
+            [[maybe_unused]] bool vis = cfg->ProcessKeybinding(ni);
+        }
+
 
         if (Globals::stop_request)
                 break;
 
         Renderer::Render();
-        util::Log(color::green, "Frame: {} in {}\n", count++, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - Start));
+        util::Log(color::green, "Frame: {} in {}\n", count++, duration_cast<microseconds>(high_resolution_clock::now() - Start));
     }
 }
 

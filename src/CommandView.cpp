@@ -146,7 +146,6 @@ bool CommandView::handle_input(const ncinput& ni) noexcept
         draw();
         return true;
     }
-
     else if (ni.utf8[0] == '/') // '/' is a special command
     {
         util::Log(color::yellow, "/ pressed\n");

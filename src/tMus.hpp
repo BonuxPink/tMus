@@ -39,7 +39,6 @@ public:
     [[nodiscard]] auto& GetViewRef() const noexcept(true)
     { return m_views[0]; }
 
-
 private:
     std::array<ViewLike, 3> m_views;
     std::shared_ptr<Config> cfg;
