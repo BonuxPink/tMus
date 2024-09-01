@@ -20,6 +20,7 @@
 #pragma once
 
 #include <cstdint>
+#include <memory>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
@@ -35,10 +36,18 @@ extern "C"
     #include <libavutil/samplefmt.h>
 }
 
+#include "AudioSettings.hpp"
+
 class Pipewire
 {
 public:
-    explicit(true) Pipewire(enum AVSampleFormat format, int rate, int channels);
+
+    Pipewire(const Pipewire &) = delete;
+    Pipewire(Pipewire &&) = delete;
+    Pipewire &operator=(const Pipewire &) = delete;
+    Pipewire &operator=(Pipewire &&) = delete;
+
+    explicit Pipewire(std::shared_ptr<AudioSettings> audioSettings);
     ~Pipewire();
 
     void period_wait() noexcept;
@@ -52,6 +61,8 @@ private:
     bool connect_stream(enum spa_audio_format format) noexcept;
 
     void open_audio(enum AVSampleFormat format, int rate, int channels);
+
+    std::shared_ptr<AudioSettings> m_audioSettings;
 
     pw_core_events core_events
     {
@@ -87,7 +98,6 @@ private:
     bool m_has_sinks{};
     bool m_ignore_state_change{};
 
-    int m_aud_format{};
     int m_core_init_seq{};
 
     unsigned char* m_buffer{};
@@ -95,8 +105,6 @@ private:
     unsigned m_buffer_size{};
     unsigned m_frames{};
     unsigned m_stride{};
-    unsigned m_rate{};
-    unsigned m_channels{};
 
     spa_hook m_core_listener{};
     spa_hook m_stream_listener{};

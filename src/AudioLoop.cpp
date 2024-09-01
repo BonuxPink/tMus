@@ -18,18 +18,16 @@
  */
 
 #include "AudioLoop.hpp"
-#include "Factories.hpp"
 #include "StatusView.hpp"
 #include "globals.hpp"
 #include "util.hpp"
 
 AudioFileManager::AudioFileManager(const std::filesystem::path& filename, ContextData& ctx_data)
-    : m_ctx_data(&ctx_data)
+    : m_ctx_data      { &ctx_data }
 {
     open_and_setup(filename);
     find_stream();
     stream_open();
-    format_fill();
 }
 
 void AudioFileManager::open_and_setup(const std::filesystem::path& filename)
@@ -130,21 +128,52 @@ void AudioFileManager::find_stream()
     }
 }
 
-void AudioFileManager::format_fill()
-{
-    m_audioSettings.fmt       = m_ctx_data->codec_ctx->sample_fmt;
-    m_audioSettings.freq      = m_ctx_data->codec_ctx->sample_rate;
-    m_audioSettings.ch_layout = m_ctx_data->codec_ctx->ch_layout;
-}
-
 AudioLoop::AudioLoop(const std::filesystem::path &path )
-    : m_produced_buf{ Wrap::make_aligned_buffer() }
-    , m_ctx_data{}
-    , manager{ path, m_ctx_data }
-    , m_pipewire{ manager.getFormat(), manager.getFreq(), manager.getChannels() }
-    , m_statusView{ m_ctx_data }
-    , swr{ *m_ctx_data.codec_ctx, manager.getAudioSettings() }
+    : m_produced_buf { Wrap::make_aligned_buffer() }
+    , m_ctx_data     {}
+    , manager        { path, m_ctx_data }
+    , swr            { *m_ctx_data.codec_ctx }
+    , m_statusView   { m_ctx_data, swr.getAudioSettings() }
+    , m_pipewire     { swr.getAudioSettings() }
 {
+    auto ConvertFmtToStr = [](AVSampleFormat fmt)
+    {
+        switch (fmt)
+        {
+        case AV_SAMPLE_FMT_U8:
+            return "U8";
+        case AV_SAMPLE_FMT_S16:
+            return "S16";
+        case AV_SAMPLE_FMT_S32:
+            return "S32";
+        case AV_SAMPLE_FMT_FLT:
+            return "FLT";
+        case AV_SAMPLE_FMT_DBL:
+            return "DBL";
+
+        case AV_SAMPLE_FMT_U8P:
+            return "U8P";
+        case AV_SAMPLE_FMT_S16P:
+            return "S16P";
+        case AV_SAMPLE_FMT_S32P:
+            return "S32P";
+        case AV_SAMPLE_FMT_FLTP:
+            return "FLTP";
+        case AV_SAMPLE_FMT_DBLP:
+            return "DBLP";
+        case AV_SAMPLE_FMT_S64:
+            return "S64";
+        case AV_SAMPLE_FMT_S64P:
+            return "S64P";
+
+        default:
+            std::unreachable();
+        };
+    };
+
+    const auto& audioSettings = swr.getAudioSettings();
+    util::Log(color::green, "Audio loop init init [fmt][freq][nb_ch]: [{}][{}][{}]\n", ConvertFmtToStr(audioSettings->fmt), audioSettings->freq, audioSettings->ch_layout.nb_channels);
+
     th_producer_loop = std::jthread{ [this](std::stop_token st) { this->producer_loop(st); } };
     pthread_setname_np(th_producer_loop.native_handle(), "Producer");
 }
@@ -194,6 +223,7 @@ int AudioLoop::FillAudioBuffer()
             else
                 throw std::runtime_error("Failed abtain erorr from av_strerorr");
         }
+
         return ret;
     };
 
@@ -255,9 +285,9 @@ int AudioLoop::FillAudioBuffer()
         else
         {
             int buffer_used_len = av_samples_get_buffer_size(nullptr,
-                                                                cc->ch_layout.nb_channels,
-                                                                frame->nb_samples,
-                                                                manager.getFormat(), 1);
+                                                             cc->ch_layout.nb_channels,
+                                                             frame->nb_samples,
+                                                             swr.getAudioFormat(), 1);
             if (buffer_used_len < 0)
             {
                 std::array<char, 128> errbuf{};
@@ -316,7 +346,7 @@ void AudioLoop::handleSeekRequest(std::int64_t offset)
     {
         std::scoped_lock lk{ m_format_mtx };
         const auto cc                          = m_ctx_data.codec_ctx.get();
-        const auto format                      = manager.getAudioSettings().fmt;
+        const auto format                      = swr.getAudioFormat();
         const auto bytes_per_sample            = av_get_bytes_per_sample(static_cast<AVSampleFormat>(format));
         const auto bytes_per_second            = cc->sample_rate * bytes_per_sample * cc->ch_layout.nb_channels;
         const auto current_position_in_seconds = static_cast<std::int64_t>(m_position_in_bytes / bytes_per_second);
@@ -388,16 +418,16 @@ void AudioLoop::HandleEvent()
         }
         Globals::event.m_EventHappened = false;
     }
-
-    m_statusView.draw(m_position_in_bytes);
 }
-
 
 void AudioLoop::consumer_loop(std::stop_token& t)
 {
     while (!t.stop_requested() && !Globals::stop_request)
     {
         HandleEvent();
+
+        m_statusView.draw(m_position_in_bytes);
+
         if (m_paused == false)
         {
             std::scoped_lock lk{ m_buffer_mtx };

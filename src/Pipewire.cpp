@@ -19,7 +19,9 @@
 
 #include "Pipewire.hpp"
 #include "util.hpp"
+
 #include <cmath>
+#include <utility>
 
 #define PW_KEY_NODE_RATE "node.rate"
 
@@ -81,10 +83,8 @@ static int ConvertFFMPEGFormatToPipewire(enum AVSampleFormat format)
     throw std::runtime_error(std::format("Failed to find convert ffmpeg's format {}", static_cast<int>(format)));
 }
 
-Pipewire::Pipewire(enum AVSampleFormat format, int rate, int channels)
-    : m_aud_format { ConvertFFMPEGFormatToPipewire(format) }
-    , m_rate       { static_cast<unsigned int>(rate) }
-    , m_channels   { static_cast<unsigned int>(channels) }
+Pipewire::Pipewire(std::shared_ptr<AudioSettings> audioSettings)
+    : m_audioSettings{ std::move(audioSettings) }
 {
     InitPipewire();
 
@@ -106,8 +106,45 @@ Pipewire::Pipewire(enum AVSampleFormat format, int rate, int channels)
         return static_cast<int>(sizeof (float));
     };
 
-    m_stride      = FMT_SIZEOF(m_aud_format) * m_channels;
-    m_frames      = std::clamp<int>(64, static_cast<int>(std::ceil(static_cast<float>(2048 * m_rate) / 48000.f)), 8192);
+    auto ConvertFmtToStr = [](AVSampleFormat fmt)
+    {
+        switch (fmt)
+        {
+        case AV_SAMPLE_FMT_U8:
+            return "U8";
+        case AV_SAMPLE_FMT_S16:
+            return "S16";
+        case AV_SAMPLE_FMT_S32:
+            return "S32";
+        case AV_SAMPLE_FMT_FLT:
+            return "FLT";
+        case AV_SAMPLE_FMT_DBL:
+            return "DBL";
+
+        case AV_SAMPLE_FMT_U8P:
+            return "U8P";
+        case AV_SAMPLE_FMT_S16P:
+            return "S16P";
+        case AV_SAMPLE_FMT_S32P:
+            return "S32P";
+        case AV_SAMPLE_FMT_FLTP:
+            return "FLTP";
+        case AV_SAMPLE_FMT_DBLP:
+            return "DBLP";
+        case AV_SAMPLE_FMT_S64:
+            return "S64";
+        case AV_SAMPLE_FMT_S64P:
+            return "S64P";
+
+        default:
+            std::unreachable();
+        };
+    };
+
+    util::Log(color::green, "Pipewire init [fmt][freq][nb_ch]: [{}][{}][{}]\n", ConvertFmtToStr(m_audioSettings->fmt), m_audioSettings->freq, m_audioSettings->ch_layout.nb_channels);
+
+    m_stride      = FMT_SIZEOF(ConvertFFMPEGFormatToPipewire(m_audioSettings->fmt)) * m_audioSettings->ch_layout.nb_channels;
+    m_frames      = std::clamp<int>(64, static_cast<int>(std::ceil(static_cast<float>(2048 * m_audioSettings->freq) / 48000.f)), 8192);
     m_buffer_size = m_frames * m_stride;
     m_buffer      = new unsigned char[m_buffer_size];
 
@@ -124,12 +161,9 @@ Pipewire::Pipewire(enum AVSampleFormat format, int rate, int channels)
                                 PW_KEY_MEDIA_CATEGORY, "Playback",
                                 PW_KEY_MEDIA_ROLE, "Music",
                                 nullptr);
-                                // PW_KEY_APP_ID, "tMus",
-                                // PW_KEY_APP_ICON_NAME, "tMus",
-                                // PW_KEY_APP_NAME, "tMus", nullptr);
 
-        pw_properties_setf(props, PW_KEY_NODE_RATE, "1/%u", m_rate);
-        pw_properties_setf(props, PW_KEY_NODE_LATENCY, "%u/%u", m_frames, m_rate);
+        pw_properties_setf(props, PW_KEY_NODE_RATE, "1/%u", m_audioSettings->freq);
+        pw_properties_setf(props, PW_KEY_NODE_LATENCY, "%u/%u", m_frames, m_audioSettings->freq);
 
         return pw_stream_new(m_core, "Playback", props);
     };
@@ -142,10 +176,9 @@ Pipewire::Pipewire(enum AVSampleFormat format, int rate, int channels)
 
     set_volume(0.3f);
 
-    m_stream_listener = {};
     pw_stream_add_listener(m_stream, &m_stream_listener, &stream_events, this);
 
-    auto to_pipewire_format = [](int fmt)
+    auto to_spa_pipewire_format = [](int fmt)
     {
         switch (fmt)
         {
@@ -178,7 +211,7 @@ Pipewire::Pipewire(enum AVSampleFormat format, int rate, int channels)
         }
     };
 
-    auto pw_format = to_pipewire_format(m_aud_format);
+    auto pw_format = to_spa_pipewire_format(ConvertFFMPEGFormatToPipewire(m_audioSettings->fmt));
     if (pw_format == SPA_AUDIO_FORMAT_UNKNOWN)
     {
         pw_thread_loop_unlock(m_loop);
@@ -369,13 +402,12 @@ void Pipewire::set_volume(float percent) noexcept
     volume.fill(percent);
 
     pw_thread_loop_lock(m_loop);
-    pw_stream_set_control(m_stream, SPA_PROP_channelVolumes, m_channels, volume.data(), nullptr);
+    pw_stream_set_control(m_stream, SPA_PROP_channelVolumes, m_audioSettings->ch_layout.nb_channels, volume.data(), nullptr);
     pw_thread_loop_unlock(m_loop);
 }
 
 void Pipewire::InitPipewire()
 {
-    util::Log("format {} rate {} channels {}\n", m_aud_format, m_rate, m_channels);
     pw_init(nullptr, nullptr);
 
     if (m_loop = pw_thread_loop_new("tMus-pipewire-main-loop", nullptr); not m_loop)
@@ -458,12 +490,12 @@ bool Pipewire::connect_stream(enum spa_audio_format format) noexcept
     {
         .format   = format,
         .flags    = SPA_AUDIO_FLAG_NONE,
-        .rate     = m_rate,
-        .channels = m_channels,
+        .rate     = static_cast<std::uint32_t>(m_audioSettings->freq),
+        .channels = static_cast<std::uint32_t>(m_audioSettings->ch_layout.nb_channels),
         .position = {},
     };
 
-    set_channel_map(&audio_info, static_cast<int>(m_channels));
+    set_channel_map(&audio_info, m_audioSettings->ch_layout.nb_channels);
     const spa_pod* params[1];
     params[0] = spa_format_audio_raw_build(&b, SPA_PARAM_EnumFormat, &audio_info);
 

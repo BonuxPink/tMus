@@ -24,38 +24,32 @@
 
 #include <memory>
 
+#include "AudioSettings.hpp"
 #include "ContextData.hpp"
 #include "Factories.hpp"
 
 class StatusView
 {
 public:
-    explicit constexpr StatusView(ContextData& ctx_data)
-        : m_ctx_data{ &ctx_data }
-        , m_url{ m_ctx_data->format_ctx->url }
+    explicit StatusView(ContextData& ctx_data, std::shared_ptr<AudioSettings> audioSettings)
+        : m_audioSettings    { std::move(audioSettings) }
+        , m_ctx_data         { &ctx_data }
+        , m_bytes_per_second { getBytesPerSecond() }
+        , m_url              { m_ctx_data->format_ctx->url }
     {
         m_ncp = MakeStatusPlane();
-
-        const auto getBytesPerSecond = [this]
-        {
-            const auto cc = m_ctx_data->codec_ctx;
-
-            const auto bitsPerSample = av_get_bytes_per_sample(cc->sample_fmt) * 8;
-            const auto sampleRate    = cc->sample_rate;
-            const auto channels      = cc->ch_layout.nb_channels;
-
-            return (bitsPerSample * sampleRate * channels) / 8;
-        };
-
-        m_bytes_per_second = getBytesPerSecond();
 
         auto pos = m_url.find_last_of('/');
         m_url.remove_prefix(pos + 1);
     }
 
     void draw(std::size_t override = 0) const;
+
 private:
+    std::size_t getBytesPerSecond();
+
     mutable std::mutex mtx;
+    std::shared_ptr<AudioSettings> m_audioSettings;
     std::unique_ptr<ncpp::Plane> m_ncp{};
     ContextData* m_ctx_data{};
     std::size_t m_bytes_per_second{};

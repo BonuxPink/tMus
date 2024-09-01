@@ -23,6 +23,14 @@
 
 #include <ncpp/Utilities.hh>
 
+std::size_t StatusView::getBytesPerSecond()
+{
+    const auto cc = m_ctx_data->codec_ctx;
+    auto tmp = m_audioSettings->freq * m_audioSettings->ch_layout.nb_channels * av_get_bytes_per_sample(m_audioSettings->fmt);
+    util::Log(color::cornsilk, "{} {}\n", tmp, av_get_bytes_per_sample(cc->sample_fmt));
+    return tmp;
+}
+
 void StatusView::draw(std::size_t time) const
 {
     std::scoped_lock lk{ mtx };

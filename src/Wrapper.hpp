@@ -62,7 +62,6 @@ namespace Wrap
         return packet;
     }
 
-
     inline constexpr auto deleter = [](auto* ptr) { operator delete[](ptr, std::align_val_t(16)); };
     using align_buf_t = std::unique_ptr<std::uint8_t, decltype(deleter)>;
 
