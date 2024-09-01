@@ -80,44 +80,47 @@ public:
     Swr(AVCodecContext &cc)
         : m_audioSettings{ std::make_shared<AudioSettings>() }
     {
+        // Conveniance func for printing
+        auto ConvertFmtToStr = [](AVSampleFormat fmt)
+        {
+            switch (fmt)
+            {
+            case AV_SAMPLE_FMT_U8:
+                return "U8";
+            case AV_SAMPLE_FMT_S16:
+                return "S16";
+            case AV_SAMPLE_FMT_S32:
+                return "S32";
+            case AV_SAMPLE_FMT_FLT:
+                return "FLT";
+            case AV_SAMPLE_FMT_DBL:
+                return "DBL";
+
+            case AV_SAMPLE_FMT_U8P:
+                return "U8P";
+            case AV_SAMPLE_FMT_S16P:
+                return "S16P";
+            case AV_SAMPLE_FMT_S32P:
+                return "S32P";
+            case AV_SAMPLE_FMT_FLTP:
+                return "FLTP";
+            case AV_SAMPLE_FMT_DBLP:
+                return "DBLP";
+            case AV_SAMPLE_FMT_S64:
+                return "S64";
+            case AV_SAMPLE_FMT_S64P:
+                return "S64P";
+
+            default:
+                std::unreachable();
+            };
+        };
+
         if (not DoesPipewireSupportFormat(cc.sample_fmt))
         {
-            auto ConvertFmtToStr = [](AVSampleFormat fmt)
-            {
-                switch (fmt)
-                {
-                case AV_SAMPLE_FMT_U8:
-                    return "U8";
-                case AV_SAMPLE_FMT_S16:
-                    return "S16";
-                case AV_SAMPLE_FMT_S32:
-                    return "S32";
-                case AV_SAMPLE_FMT_FLT:
-                    return "FLT";
-                case AV_SAMPLE_FMT_DBL:
-                    return "DBL";
-
-                case AV_SAMPLE_FMT_U8P:
-                    return "U8P";
-                case AV_SAMPLE_FMT_S16P:
-                    return "S16P";
-                case AV_SAMPLE_FMT_S32P:
-                    return "S32P";
-                case AV_SAMPLE_FMT_FLTP:
-                    return "FLTP";
-                case AV_SAMPLE_FMT_DBLP:
-                    return "DBLP";
-                case AV_SAMPLE_FMT_S64:
-                    return "S64";
-                case AV_SAMPLE_FMT_S64P:
-                    return "S64P";
-
-                default:
-                    std::unreachable();
-                };
-            };
-
-            util::Log(color::aqua, "Desired format: {}, but going to use: {}\n", ConvertFmtToStr(cc.sample_fmt), ConvertFmtToStr(AV_SAMPLE_FMT_S16));
+            util::Log(color::aqua, "Codec: {}, Desired format: {}, but going to use: {}\n", avcodec_get_name(cc.codec_id),
+                                                                                            ConvertFmtToStr(cc.sample_fmt),
+                                                                                            ConvertFmtToStr(AV_SAMPLE_FMT_S16));
 
             int ret = swr_alloc_set_opts2(&m_swr_ctx,
                                        /* out_ch_layout  out_sample_fmt     out_sample_rate */
@@ -144,7 +147,8 @@ public:
         }
         else
         {
-            util::Log(color::aqua, "Not initializing SWR\n");
+            util::Log(color::aqua, "Codec: {}, format: {}, Not initializing SWR\n", avcodec_get_name(cc.codec_id),
+                                                                                    ConvertFmtToStr(cc.sample_fmt));
 
             m_audioSettings->freq      = cc.sample_rate;
             m_audioSettings->fmt       = cc.sample_fmt;

@@ -91,8 +91,6 @@ void AudioFileManager::stream_open()
         throw std::runtime_error("Codec is of wrong type");
     }
 
-    util::Log("Avctx fmt: {}\n", static_cast<int>(m_ctx_data->codec_ctx->sample_fmt));
-
     m_ctx_data->format_ctx->streams[m_streamIndex]->discard = AVDISCARD_DEFAULT;
 }
 
