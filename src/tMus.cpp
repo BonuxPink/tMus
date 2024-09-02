@@ -162,7 +162,6 @@ void tMus::loop()
             [[maybe_unused]] bool vis = cfg->ProcessKeybinding(ni);
         }
 
-
         if (Globals::stop_request)
                 break;
 

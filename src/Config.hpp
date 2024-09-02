@@ -44,14 +44,8 @@ struct Config
 
     [[nodiscard]] bool ProcessKeybinding(ncinput ni);
 
-    void RegisterCommandProcessor()
-    {
-
-    }
-
 private:
     void ParseConfig();
-    void foo();
 
     struct Key
     {
