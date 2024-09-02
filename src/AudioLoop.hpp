@@ -118,9 +118,10 @@ public:
 
         if (not DoesPipewireSupportFormat(cc.sample_fmt))
         {
-            util::Log(color::aqua, "Codec: {}, Desired format: {}, but going to use: {}\n", avcodec_get_name(cc.codec_id),
-                                                                                            ConvertFmtToStr(cc.sample_fmt),
-                                                                                            ConvertFmtToStr(AV_SAMPLE_FMT_S16));
+            util::Log(color::aqua, "Codec: {}, Desired format: {}, but going to use: {}, sample: {}\n", avcodec_get_name(cc.codec_id),
+                                                                                                        ConvertFmtToStr(cc.sample_fmt),
+                                                                                                        ConvertFmtToStr(AV_SAMPLE_FMT_S16),
+                                                                                                        cc.sample_rate);
 
             int ret = swr_alloc_set_opts2(&m_swr_ctx,
                                        /* out_ch_layout  out_sample_fmt     out_sample_rate */
@@ -147,8 +148,9 @@ public:
         }
         else
         {
-            util::Log(color::aqua, "Codec: {}, format: {}, Not initializing SWR\n", avcodec_get_name(cc.codec_id),
-                                                                                    ConvertFmtToStr(cc.sample_fmt));
+            util::Log(color::aqua, "Codec: {}, format: {}, sample: {}, Not initializing SWR\n", avcodec_get_name(cc.codec_id),
+                                                                                                ConvertFmtToStr(cc.sample_fmt),
+                                                                                                cc.sample_rate);
 
             m_audioSettings->freq      = cc.sample_rate;
             m_audioSettings->fmt       = cc.sample_fmt;

@@ -201,7 +201,7 @@ int AudioLoop::FillAudioBuffer()
         return ret;
     };
 
-    auto read_packet = [this](AVFormatContext* format_ctx, AVPacket* pkt)
+    auto read_frame = [this](AVFormatContext* format_ctx, AVPacket* pkt)
     {
         std::scoped_lock lk{ m_format_mtx };
 
@@ -231,13 +231,20 @@ int AudioLoop::FillAudioBuffer()
         if (pkt->data)
         {
             pkt.reset();
-            if (auto ret = read_packet(m_ctx_data.format_ctx.get(), pkt); ret < 0)
+
+            int ret = read_frame(m_ctx_data.format_ctx.get(), pkt);
+            if (ret < 0)
             {
                 if (ret == -2)
                     return ret;
 
                 return 0;
             }
+
+            // read_frame() likes to return other stream's
+            // like mp3's stream which contains album art
+            if (pkt->stream_index != manager.getStreamIndex())
+                continue;
         }
 
         const auto cc = m_ctx_data.codec_ctx.get();
