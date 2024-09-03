@@ -41,5 +41,3 @@ std::shared_ptr<CommandProcessor> MakeCommandProcessor(const std::shared_ptr<Lis
 
 using MakeViewFunc = std::function<ListView::ItemContainer(std::filesystem::path&&)>;
 ListView MakeView(ncpp::Plane&, MakeViewFunc);
-
-std::shared_ptr<ListView> MakeSharedListView(ncpp::Plane&& plane, std::shared_ptr<Focus> focus) noexcept;

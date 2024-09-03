@@ -119,8 +119,3 @@ std::unique_ptr<ncpp::Plane> MakeStatusPlane() noexcept
 
     return statusPlane;
 }
-
-std::shared_ptr<ListView> MakeSharedListView(ncpp::Plane&& plane, std::shared_ptr<Focus> focus) noexcept
-{
-    return std::make_shared<ListView>( std::move(plane), std::move(focus) );
-}
