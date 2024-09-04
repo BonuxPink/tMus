@@ -30,7 +30,7 @@ tMus is a keyboard driven terminal based music player, it was originally inspire
 *** Arch linux
 
 #+begin_src txt
-$ pacman --needed -S ffmpeg sdl2 notcurses make gcc
+$ pacman --needed -S ffmpeg pipewire notcurses make gcc
 #+end_src
 
 *** Ubuntu/Debian
