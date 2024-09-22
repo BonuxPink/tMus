@@ -97,6 +97,11 @@ void Config::ParseConfig()
 
         m_keybindings.push_back({ key, std::move(opt) });
     }
+
+    for (const auto& [key, value] : parser["Audio"])
+    {
+        m_audio[key] = value.as<int>();
+    }
 }
 
 bool Config::ProcessKeybinding(ncinput ni)

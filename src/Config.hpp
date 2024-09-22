@@ -44,6 +44,9 @@ struct Config
 
     [[nodiscard]] bool ProcessKeybinding(ncinput ni);
 
+    [[nodiscard]] int GetVolume() noexcept
+    { return m_audio["volume"]; }
+
 private:
     void ParseConfig();
 
@@ -57,5 +60,6 @@ private:
     MyVec funcs;
 
     std::vector<Key> m_keybindings;
+    std::unordered_map<std::string, int> m_audio;
     std::ifstream m_file;
 };
