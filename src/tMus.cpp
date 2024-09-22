@@ -97,8 +97,8 @@ tMus::tMus(const std::shared_ptr<FocusManager>& manager)
 {
     auto [albumPlane, songPlane, commandPlane] = MakePlanes();
 
-    const auto albumView = std::make_shared<ListView>(std::move(albumPlane), std::move(manager->m_CurrentFocus));
-    const auto songView  = std::make_shared<ListView>(std::move(songPlane), std::move(manager->m_LastFocus));
+    const auto albumView = std::make_shared<ListView>(std::move(albumPlane), manager->m_CurrentFocus);
+    const auto songView  = std::make_shared<ListView>(std::move(songPlane), manager->m_LastFocus);
 
     auto cmdProcessor = MakeCommandProcessor(albumView, songView);
 
