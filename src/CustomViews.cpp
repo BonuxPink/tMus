@@ -40,6 +40,7 @@ ListView::ListView(ncpp::Plane&& plane, std::shared_ptr<Focus> focus)
     ncpp::Widget::ensure_valid_plane(m_ncp);
 
     util::Log(color::green, "CALLBACKS: {} {}\n", (bool)m_enterCallback, (bool)m_selectionCallback);
+    ncplane_set_userptr(m_ncp.to_ncplane(), this);
 }
 
 void ListView::draw()

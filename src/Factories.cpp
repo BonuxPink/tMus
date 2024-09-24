@@ -29,6 +29,67 @@ extern "C"
     #include <libavutil/common.h>
 }
 
+static int album_resize_cb(ncplane* album_view_ncp)
+{
+    util::Log("Album resize\n");
+    unsigned dimy = 0;
+    unsigned dimx = 0;
+
+    ncplane_erase(album_view_ncp);
+
+    const ncplane* std_plane = ncplane_parent_const(album_view_ncp);
+    ncplane_dim_yx(std_plane, &dimy, &dimx);
+
+    const auto actual_dimx = dimx * 40 / 100;
+    if (ncplane_resize(album_view_ncp, 0, 0, 0, 0, 0, 0, dimy, actual_dimx) == -1)
+    {
+        util::Log(color::red, "Failed to ncplane_resize");
+        return -1;
+    }
+
+    auto* listView = std::bit_cast<ListView*>(ncplane_userptr(album_view_ncp));
+    listView->draw();
+
+    return 0;
+}
+
+static int song_resize_cb(ncplane* song_view_ncp)
+{
+    util::Log("song_resize\n");
+    unsigned dimy = 0;
+    unsigned dimx = 0;
+
+    ncplane_erase(song_view_ncp);
+
+    const ncplane* std_plane = ncplane_parent_const(song_view_ncp);
+    ncplane_dim_yx(std_plane, &dimy, &dimx);
+
+    const auto actual_dimx = dimx * 40 / 100;
+
+    if (ncplane_move_yx(song_view_ncp,
+                        0,
+                        static_cast<int>(actual_dimx)) == -1)
+    {
+        util::Log(color::red, "Failed to resize listView\n");
+        return -1;
+    }
+
+    if (ncplane_resize(song_view_ncp,
+                       0, 0,
+                       0, 0,
+                       0, 0,
+                       dimy, dimx - actual_dimx) == -1)
+    {
+        util::Log(color::red, "falied to resize songView\n");
+        return -1;
+    }
+
+    auto* listView = std::bit_cast<ListView*>(ncplane_userptr(song_view_ncp));
+    listView->draw();
+
+    return 0;
+}
+
 std::tuple<ncpp::Plane, ncpp::Plane, ncpp::Plane> MakePlanes()
 {
     auto stdPlanePtr = std::unique_ptr<ncpp::Plane>(ncpp::NotCurses::get_instance().get_stdplane());
@@ -40,7 +101,7 @@ std::tuple<ncpp::Plane, ncpp::Plane, ncpp::Plane> MakePlanes()
         .rows = stdPlane.get_dim_y() - 2,
         .cols = stdPlane.get_dim_x() * 40 / 100,
         .userptr = nullptr, .name = nullptr,
-        .resizecb = nullptr,
+        .resizecb = album_resize_cb,
         .flags = 0, .margin_b = 0, .margin_r = 0,
     };
 
@@ -49,7 +110,8 @@ std::tuple<ncpp::Plane, ncpp::Plane, ncpp::Plane> MakePlanes()
         .y = 0, .x = static_cast<int>(albOpts.cols),
         .rows = albOpts.rows,
         .cols = stdPlane.get_dim_x() - albOpts.cols,
-        .userptr = nullptr, .name = nullptr, .resizecb = nullptr,
+        .userptr = nullptr, .name = nullptr,
+        .resizecb = song_resize_cb,
         .flags = 0, .margin_b = 0, .margin_r = 0,
     };
 
@@ -96,6 +158,27 @@ std::shared_ptr<CommandProcessor> MakeCommandProcessor(const std::shared_ptr<Lis
     com->registerCommand("voldown",    std::make_shared<Voldown>());
 
     return com;
+}
+
+static int status_resize_cb(ncplane* n)
+{
+    unsigned dimy = 0;
+    unsigned dimx = 0;
+
+    ncplane_erase(n);
+
+    const ncplane* std_plane = ncplane_parent_const(n);
+    ncplane_dim_yx(std_plane, &dimy, &dimx);
+
+    util::Log(color::hot_pink, "{} {}\n", dimy, dimx);
+
+    if (ncplane_resize(n, 0, 0, 0, 0, 0, 0, 1, 150) < 0)
+    {
+        util::Log(color::red, "Failed to ncplane_resize");
+        return -1;
+    }
+
+    return 0;
 }
 
 std::unique_ptr<ncpp::Plane> MakeStatusPlane() noexcept
