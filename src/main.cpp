@@ -36,8 +36,8 @@ int main() try
 
     ncpp::NotCurses nc{ opts };
 
-    tMus::Init();
     tMus::InitLog();
+    tMus::Init();
 
     const auto albumViewFocus = std::make_shared<Focus>();
     const auto songViewFocus  = std::make_shared<Focus>();
