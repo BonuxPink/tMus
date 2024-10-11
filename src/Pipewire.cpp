@@ -484,7 +484,13 @@ void Pipewire::set_channel_map(spa_audio_info_raw* info, int channels) noexcept
 bool Pipewire::connect_stream(enum spa_audio_format format) noexcept
 {
     std::uint8_t buffer[1024];
-    spa_pod_builder b = SPA_POD_BUILDER_INIT(buffer, sizeof buffer);
+    spa_pod_builder b = {
+        .data = buffer,
+        .size = sizeof buffer,
+        ._padding = 0,
+        .state = {.offset = 0, .flags = 0, .frame = nullptr},
+        .callbacks = { nullptr, nullptr },
+    };
 
     spa_audio_info_raw audio_info
     {

@@ -25,6 +25,7 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
 #pragma GCC diagnostic ignored "-Wpedantic"
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 
 #include <pipewire/pipewire.h>
 #include <spa/param/audio/format-utils.h>

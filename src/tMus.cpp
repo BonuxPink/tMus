@@ -140,14 +140,14 @@ void tMus::loop()
 
     while (!Globals::stop_request)
     {
-        util::Log(color::yellow, "----------------------------------\n");
-
         ncinput ni;
         std::uint32_t input = notcurses_get_blocking(notcurses, &ni);
 
         // Currently we don't want to handle 'Release' event.
         if (ni.evtype == ncpp::EvType::Release)
             continue;
+
+        util::Log(color::yellow, "----------------------------------\n");
 
         // Get the time
         auto Start{ high_resolution_clock::now() };

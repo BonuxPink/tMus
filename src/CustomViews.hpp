@@ -75,7 +75,6 @@ public:
     void toggleFocus() noexcept { m_Focus->toggle(); }
     [[nodiscard]] ItemContainer& getItems() noexcept { return m_items; }
 
-    auto& getCallback() { return m_enterCallback; }
     auto* getSelection() { return &m_selectionCallback; }
 private:
     friend class PrintLine;
