@@ -152,14 +152,14 @@ void tMus::loop()
         // Get the time
         auto Start{ high_resolution_clock::now() };
 
-        const auto& cmdView = std::get<std::shared_ptr<CommandView>>(m_views[0]);
-        if (input == ':' || cmdView->isFocused())
+        if (const auto& cmdView = std::get<std::shared_ptr<CommandView>>(m_views[0]);
+            input == ':' || cmdView->isFocused())
         {
             cmdView->handle_input(ni);
         }
         else
         {
-            [[maybe_unused]] bool vis = cfg->ProcessKeybinding(ni);
+            std::ignore = cfg->ProcessKeybinding(ni);
         }
 
         if (Globals::stop_request)

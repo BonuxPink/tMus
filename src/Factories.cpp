@@ -161,27 +161,6 @@ std::shared_ptr<CommandProcessor> MakeCommandProcessor(const std::shared_ptr<Lis
     return com;
 }
 
-static int status_resize_cb(ncplane* n)
-{
-    unsigned dimy = 0;
-    unsigned dimx = 0;
-
-    ncplane_erase(n);
-
-    const ncplane* std_plane = ncplane_parent_const(n);
-    ncplane_dim_yx(std_plane, &dimy, &dimx);
-
-    util::Log(color::hot_pink, "{} {}\n", dimy, dimx);
-
-    if (ncplane_resize(n, 0, 0, 0, 0, 0, 0, 1, 150) < 0)
-    {
-        util::Log(color::red, "Failed to ncplane_resize");
-        return -1;
-    }
-
-    return 0;
-}
-
 std::unique_ptr<ncpp::Plane> MakeStatusPlane() noexcept
 {
     const auto stdPlanePtr = std::unique_ptr<ncpp::Plane>(ncpp::NotCurses::get_instance().get_stdplane());

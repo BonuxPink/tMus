@@ -25,15 +25,6 @@
 #include <string_view>
 #include <unordered_map>
 
-struct Arguments
-{
-    Arguments(int nb)
-        : nbArguments(nb)
-    { }
-
-    int nbArguments{};
-};
-
 struct Command
 {
     Command()                           = default;
