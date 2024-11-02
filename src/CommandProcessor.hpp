@@ -202,9 +202,9 @@ private:
     std::shared_ptr<ListView> m_SongView;
 };
 
-struct Right : public Command
+struct SeekForwards : public Command
 {
-    explicit Right(std::shared_ptr<ListView>, std::shared_ptr<ListView>);
+    explicit SeekForwards(std::shared_ptr<ListView>, std::shared_ptr<ListView>);
     bool execute(std::string_view) override;
     [[nodiscard]] bool complete(std::vector<std::uint32_t>&) const noexcept override
     { return false; }
@@ -214,9 +214,9 @@ private:
     std::shared_ptr<ListView> m_SongView;
 };
 
-struct Left : public Command
+struct SeekBackwards : public Command
 {
-    explicit Left(std::shared_ptr<ListView>, std::shared_ptr<ListView>);
+    explicit SeekBackwards(std::shared_ptr<ListView>, std::shared_ptr<ListView>);
     bool execute(std::string_view) override;
     [[nodiscard]] bool complete(std::vector<std::uint32_t>&) const noexcept override
     { return false; }

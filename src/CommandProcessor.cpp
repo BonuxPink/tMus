@@ -460,23 +460,23 @@ bool Down::execute(std::string_view)
     return true;
 }
 
-Right::Right(std::shared_ptr<ListView> listView, std::shared_ptr<ListView> songView)
+SeekForwards::SeekForwards(std::shared_ptr<ListView> listView, std::shared_ptr<ListView> songView)
     : m_ListView{ std::move(listView) }
     , m_SongView{ std::move(songView) }
 { }
 
-bool Right::execute(std::string_view)
+bool SeekForwards::execute(std::string_view)
 {
     Globals::event.SetEvent(Event::Action::SEEK_FORWARDS);
     return true;
 }
 
-Left::Left(std::shared_ptr<ListView> listView, std::shared_ptr<ListView> songView)
+SeekBackwards::SeekBackwards(std::shared_ptr<ListView> listView, std::shared_ptr<ListView> songView)
     : m_ListView{ std::move(listView) }
     , m_SongView{ std::move(songView) }
 { }
 
-bool Left::execute(std::string_view)
+bool SeekBackwards::execute(std::string_view)
 {
     Globals::event.SetEvent(Event::Action::SEEK_BACKWARDS);
     return true;
