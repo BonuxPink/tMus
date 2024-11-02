@@ -147,7 +147,7 @@ IniParser::IniParser(std::istream& file)
             continue;
         case '[':
             IniSection sec{ file, line };
-            vec.push_back(std::move(sec));
+            m_sections.push_back(std::move(sec));
             break;
         }
     }
@@ -155,12 +155,12 @@ IniParser::IniParser(std::istream& file)
 
 IniSection& IniParser::operator[](std::string_view index)
 {
-    auto ret = rn::find_if(vec, [=](const auto& section_name)
+    auto ret = rn::find_if(m_sections, [=](const auto& section_name)
     {
         return section_name == index;
     }, &IniSection::section_name);
 
-    if (ret == vec.end())
+    if (ret == m_sections.end())
     {
         throw std::runtime_error(std::format("The section: {} does not exist", index));
     }
@@ -169,12 +169,12 @@ IniSection& IniParser::operator[](std::string_view index)
 
 const IniSection& IniParser::operator[](std::string_view index) const
 {
-    auto ret = rn::find_if(vec, [=](const auto& section_name)
+    auto ret = rn::find_if(m_sections, [=](const auto& section_name)
     {
         return section_name == index;
     }, &IniSection::section_name);
 
-    if (ret == vec.end())
+    if (ret == m_sections.end())
     {
         throw std::runtime_error(std::format("The section: {} does not exist", index));
     }
@@ -204,7 +204,7 @@ void IniParser::SaveToFile(std::string_view filename) const
 
 
     std::size_t index{};
-    for (const auto& elem : vec)
+    for (const auto& elem : m_sections)
     {
         fs << '[' << elem.section_name << ']' << '\n';
         for (const auto& pair : elem.values)
@@ -215,7 +215,7 @@ void IniParser::SaveToFile(std::string_view filename) const
         }
 
         // Want to skip last iteration
-        if (index < vec.size() - 1)
+        if (index < m_sections.size() - 1)
         {
             index++;
             fs << '\n';

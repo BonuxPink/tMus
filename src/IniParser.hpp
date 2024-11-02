@@ -80,7 +80,7 @@ public:
 
     [[nodiscard]] auto getSectionCount() const noexcept
     {
-        return vec.size();
+        return m_sections.size();
     }
 
     [[nodiscard]] IniSection& operator[](std::string_view index);
@@ -89,5 +89,5 @@ public:
     void SaveToFile(std::string_view filename) const;
 
 private:
-    std::vector<IniSection> vec;
+    std::vector<IniSection> m_sections;
 };
