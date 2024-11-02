@@ -54,13 +54,11 @@ public:
     [[nodiscard]] Focus* getFocus() const { return m_Focus.get(); }
 
     void draw();
-    bool handle_input(const ncinput&) noexcept;
 
     void SelectionCallback();
     bool EnterCallback();
     void SelectNextItem();
     void SelectPrevItem();
-    void Reset() noexcept;
     void Clear() noexcept;
 
     void setItems(ItemContainer) noexcept;

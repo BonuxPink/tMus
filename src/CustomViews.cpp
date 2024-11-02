@@ -17,7 +17,6 @@
  * along with tMus. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "globals.hpp"
 #include "util.hpp"
 #include "CustomViews.hpp"
 
@@ -36,7 +35,6 @@ ListView::ListView(ncpp::Plane&& plane, std::shared_ptr<Focus> focus)
     , m_ncp(std::move(plane))
     , m_Focus(std::move(focus))
 {
-    util::Log("Has focus: {}\n", m_Focus->m_hasFocus);
     ncpp::Widget::ensure_valid_plane(m_ncp);
 
     util::Log(color::green, "CALLBACKS: {} {}\n", (bool)m_enterCallback, (bool)m_selectionCallback);
@@ -114,86 +112,6 @@ void ListView::draw()
 
         ++printidx;
     }
-}
-
-bool ListView::handle_input(const ncinput& input) noexcept
-{
-    if (!hasFocus())
-    {
-        util::Log("Not has focus\n");
-        return false;
-    }
-
-    util::Log("Has focus\n");
-
-    if (input.id == 'q')
-    {
-        Globals::stop_request = true;
-        return true;
-    }
-
-    // if (input.id == NCKEY_UP)
-    // {
-    //     SelectPrevItem();
-    //     return true;
-    // }
-
-    else if (input.id == NCKEY_DOWN)
-    {
-        SelectNextItem();
-        return true;
-    }
-
-    else if (input.id == NCKEY_RIGHT)
-    {
-        Globals::event.SetEvent(Event::Action::SEEK_FORWARDS);
-        return true;
-    }
-
-    else if (input.id == NCKEY_LEFT)
-    {
-        Globals::event.SetEvent(Event::Action::SEEK_BACKWARDS);
-        return true;
-    }
-
-    else if (input.id == NCKEY_TAB)
-    {
-        if (!m_Focus->hasFocus())
-        {
-            m_Focus->toggle();
-        }
-        else
-        {
-            util::Log("Unfocusing song view\n");
-            m_Focus->toggle();
-        }
-        return true;
-    }
-
-    else if (input.id == NCKEY_SPACE)
-    {
-        Globals::event.SetEvent(Event::Action::PAUSE);
-        return true;
-    }
-
-    else if (input.utf8[0] == '+')
-    {
-        Globals::event.SetEvent(Event::Action::UP_VOLUME);
-        return true;
-    }
-
-    else if (input.utf8[0] == '-')
-    {
-        Globals::event.SetEvent(Event::Action::DOWN_VOLUME);
-        return true;
-    }
-
-    else if (input.id == NCKEY_ENTER)
-    {
-        return EnterCallback();
-    }
-
-    return false;
 }
 
 void ListView::SelectNextItem()
@@ -301,19 +219,6 @@ bool ListView::EnterCallback()
     }
 
     return false;
-}
-
-void ListView::Reset() noexcept
-{
-    m_itemcount = m_items.size();
-    m_selected = 0;
-    m_startdisp = 0;
-
-    for (const auto& item : m_items)
-    {
-        if (item.first > m_longop)
-            m_longop = item.first;
-    }
 }
 
 void ListView::Clear() noexcept
