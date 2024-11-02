@@ -27,8 +27,8 @@ namespace fs = std::filesystem;
 constinit std::string_view str{ "/tmp/" };
 
 Config::Config(fs::path ConfigPath, std::shared_ptr<CommandProcessor> cmdproc)
-    : m_proc{ std::move(cmdproc) }
-    , m_file{ ConfigPath }
+    : m_cmdProc{ std::move(cmdproc) }
+    , m_configFile{ ConfigPath }
 {
     ParseConfig();
 }
@@ -36,7 +36,7 @@ Config::Config(fs::path ConfigPath, std::shared_ptr<CommandProcessor> cmdproc)
 void Config::ParseConfig()
 {
     std::stringstream ss;
-    ss << m_file.rdbuf();
+    ss << m_configFile.rdbuf();
 
     IniParser parser(ss);
 
@@ -89,18 +89,18 @@ void Config::ParseConfig()
         }
 
         auto commandName = function.as<std::string>();
-        auto opt = m_proc->findCommand(commandName);
+        auto opt = m_cmdProc->findCommand(commandName);
         if (opt == nullptr)
         {
             throw std::runtime_error(std::format("Failed to find command '{}' in command list", commandName));
         }
 
-        m_keybindings.push_back({ key, std::move(opt) });
+        m_keybindingsSection.push_back({ key, std::move(opt) });
     }
 
     for (const auto& [key, value] : parser["Audio"])
     {
-        m_audio[key] = value.as<int>();
+        m_audioSection[key] = value.as<int>();
     }
 }
 
@@ -108,7 +108,7 @@ bool Config::ProcessKeybinding(ncinput ni)
 {
     auto id = ni.id;
     util::Log("ID: {}, ch: {}\n", id, (char)id);
-    for (const auto& elem : m_keybindings)
+    for (const auto& elem : m_keybindingsSection)
     {
         if (elem.key == id)
         {

@@ -40,26 +40,25 @@ struct Config
     explicit Config(std::filesystem::path ConfigPath, std::shared_ptr<CommandProcessor>);
 
     using MyVec = std::vector<std::pair<std::string, SmartKey>>;
-    MyVec getKeybindings() const noexcept { return funcs; }
 
     [[nodiscard]] bool ProcessKeybinding(ncinput ni);
 
     [[nodiscard]] int GetVolume() noexcept
-    { return m_audio["volume"]; }
+    { return m_audioSection["volume"]; }
 
 private:
     void ParseConfig();
 
-    struct Key
+    struct Keybind
     {
         std::uint32_t key;
         std::shared_ptr<Command> cmd;
     };
 
-    std::shared_ptr<CommandProcessor> m_proc;
+    std::shared_ptr<CommandProcessor> m_cmdProc;
     MyVec funcs;
 
-    std::vector<Key> m_keybindings;
-    std::unordered_map<std::string, int> m_audio;
-    std::ifstream m_file;
+    std::vector<Keybind> m_keybindingsSection;
+    std::unordered_map<std::string, int> m_audioSection;
+    std::ifstream m_configFile;
 };
