@@ -247,6 +247,7 @@ private:
     std::vector<std::uint8_t> m_buffer{};
 
     bool m_paused{};
+    std::atomic<bool> m_eof_reached{};
 };
 
 inline std::jthread playbackThread;

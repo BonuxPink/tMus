@@ -235,7 +235,7 @@ int AudioLoop::FillAudioBuffer()
             int ret = read_frame(m_ctx_data.format_ctx.get(), pkt);
             if (ret < 0)
             {
-                if (ret == -2)
+                if (ret == -1)
                     return ret;
 
                 return 0;
@@ -315,14 +315,15 @@ void AudioLoop::producer_loop(std::stop_token st)
         {
             using namespace std::chrono_literals;
             std::this_thread::sleep_for(50ms);
+            continue;
         }
 
-        if (int nr_read = FillAudioBuffer(); nr_read < 0)
+        if (int nr_read = FillAudioBuffer(); nr_read <= 0)
         {
-            if (nr_read != -1 || errno != EAGAIN)
+            if (nr_read == -1) // eof
             {
-                nr_read = 0;
-                /* TODO: handle EOF */
+                m_eof_reached = true;
+                break;
             }
             else
             {
@@ -334,13 +335,15 @@ void AudioLoop::producer_loop(std::stop_token st)
         }
         else
         {
-            std::scoped_lock lk{ m_buffer_mtx };
-
-            if (auto ptr = m_produced_buf.get(); ptr)
             {
-                std::ranges::copy(ptr,
-                                std::next(ptr, nr_read),
-                                std::back_inserter(m_buffer));
+                std::scoped_lock lk{ m_buffer_mtx };
+
+                if (auto ptr = m_produced_buf.get(); ptr)
+                {
+                    std::ranges::copy(ptr,
+                                    std::next(ptr, nr_read),
+                                    std::back_inserter(m_buffer));
+                }
             }
         }
     }
@@ -437,6 +440,13 @@ void AudioLoop::consumer_loop(std::stop_token& t)
         {
             std::scoped_lock lk{ m_buffer_mtx };
 
+            if (m_buffer.size() <= 0 and m_eof_reached)
+            {
+                // last update for statusView
+                m_statusView.draw();
+                break;
+            }
+
             auto ret = m_pipewire.write_audio(m_buffer.data(), m_buffer.size());
 
             const auto min = std::min(ret, m_buffer.size());
@@ -445,6 +455,11 @@ void AudioLoop::consumer_loop(std::stop_token& t)
             m_position_in_bytes += min;
 
             m_pipewire.period_wait();
+        }
+        else
+        {
+            using namespace std::chrono_literals;
+            std::this_thread::sleep_for(50ms);
         }
     }
 }
