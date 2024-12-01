@@ -69,15 +69,15 @@ inline bool DoesPipewireSupportFormat(AVSampleFormat fmt) noexcept
     }
 }
 
-class Swr
+class Resample
 {
 public:
-    Swr(const Swr&) = default;
-    Swr(Swr&&) = delete;
-    Swr& operator=(const Swr&) = default;
-    Swr& operator=(Swr&&) = delete;
+    Resample(const Resample&) = default;
+    Resample(Resample&&) = delete;
+    Resample& operator=(const Resample&) = default;
+    Resample& operator=(Resample&&) = delete;
 
-    Swr(AVCodecContext &cc)
+    Resample(AVCodecContext &cc)
         : m_audioSettings{ std::make_shared<AudioSettings>() }
     {
         // Conveniance func for printing
@@ -168,7 +168,7 @@ public:
         return 0;
     }
 
-    ~Swr()
+    ~Resample()
     {
         swr_free(&m_swr_ctx);
     }
@@ -240,7 +240,7 @@ private:
 
     ContextData m_ctx_data{};
     AudioFileManager manager;
-    Swr swr;
+    Resample swr;
     StatusView m_statusView;
     Pipewire m_pipewire;
     std::size_t m_position_in_bytes = 0uz;
