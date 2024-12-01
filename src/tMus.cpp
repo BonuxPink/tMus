@@ -143,14 +143,14 @@ void tMus::loop()
         ncinput ni;
         std::uint32_t input = notcurses_get_blocking(notcurses, &ni);
 
+        // Get the time
+        auto Start{ high_resolution_clock::now() };
+
         // Currently we don't want to handle 'Release' event.
         if (ni.evtype == ncpp::EvType::Release)
             continue;
 
         util::Log(color::yellow, "----------------------------------\n");
-
-        // Get the time
-        auto Start{ high_resolution_clock::now() };
 
         if (const auto& cmdView = std::get<std::shared_ptr<CommandView>>(m_views[0]);
             input == ':' || cmdView->isFocused())
@@ -161,9 +161,6 @@ void tMus::loop()
         {
             std::ignore = cfg->ProcessKeybinding(ni);
         }
-
-        if (Globals::stop_request)
-                break;
 
         Renderer::Render();
         util::Log(color::green, "Frame: {} in {}\n", count++, duration_cast<microseconds>(high_resolution_clock::now() - Start));
