@@ -36,8 +36,10 @@ public:
 
     using ViewLike = std::variant<std::shared_ptr<CommandView>, std::shared_ptr<ListView>>;
 
+#ifdef DEBUG
     [[nodiscard]] auto& GetViewRef() const noexcept(true)
     { return m_views[0]; }
+#endif
 
 private:
     std::array<ViewLike, 3> m_views;
