@@ -31,6 +31,7 @@ public:
     void draw();
     void search(std::string str);
     bool handle_input(const ncinput&) noexcept;
+    void ReportError(std::string_view error) noexcept;
 
     [[nodiscard]] bool isFocused() const noexcept
     { return m_focus; }
@@ -42,7 +43,6 @@ private:
 
     void ProcessCommand(std::string);
     void CompleteNext() noexcept;
-    void ReportError(std::string_view error) noexcept;
 
     void clearDraw() noexcept;
     void clearCommand() noexcept;

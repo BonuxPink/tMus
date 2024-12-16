@@ -29,7 +29,7 @@
 #include <ncpp/NotCurses.hh>
 #include <fcntl.h>
 
-static void SetupCallbacks(ListView& albumViewRef, ListView& songViewRef)
+static void SetupCallbacks(ListView& albumViewRef, ListView& songViewRef, CommandView& cmdView)
 {
     albumViewRef.setSelectCallback([&songViewRef](const std::filesystem::path& path)
     {
@@ -59,7 +59,7 @@ static void SetupCallbacks(ListView& albumViewRef, ListView& songViewRef)
     songViewRef.setEnterCallback([&](const std::filesystem::path& path)
     {
         util::Log(color::moccasin, "song callback\n");
-        auto starter = [audio_path = path](std::stop_token tkn)
+        auto starter = [&cmdView, audio_path = path](std::stop_token tkn)
         {
             try
             {
@@ -68,14 +68,17 @@ static void SetupCallbacks(ListView& albumViewRef, ListView& songViewRef)
             }
             catch (const std::runtime_error& e)
             {
+                cmdView.ReportError(e.what());
                 util::Log(color::red, "Runtime error: {}", e.what());
             }
             catch (const std::exception& e)
             {
+                cmdView.ReportError(e.what());
                 util::Log(color::red, "Exception: ", e.what());
             }
             catch (...)
             {
+                cmdView.ReportError("Unhandled exception");
                 util::Log(color::red, "Unhandled exception caught\n");
             }
         };
@@ -110,7 +113,7 @@ tMus::tMus(const std::shared_ptr<FocusManager>& manager)
     m_views[1] = albumView;
     m_views[2] = songView;
 
-    auto& [_, albumViewRef, songViewRef] = m_views;
+    auto& [cmdViewRef, albumViewRef, songViewRef] = m_views;
 
     manager->m_CurrentFocus->setNotify([&]()
     {
@@ -125,7 +128,8 @@ tMus::tMus(const std::shared_ptr<FocusManager>& manager)
     });
 
     SetupCallbacks(*std::get<std::shared_ptr<ListView>>(albumViewRef),
-                   *std::get<std::shared_ptr<ListView>>(songViewRef));
+                   *std::get<std::shared_ptr<ListView>>(songViewRef),
+                   *std::get<std::shared_ptr<CommandView>>(cmdViewRef));
 }
 
 void tMus::loop()
