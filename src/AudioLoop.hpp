@@ -226,7 +226,6 @@ public:
 private:
     void producer_loop(std::stop_token st);
     int FillAudioBuffer();
-    int Fill();
 
     void HandleEvent();
     void handleSeekRequest(std::int64_t offset);
