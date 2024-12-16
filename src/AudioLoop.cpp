@@ -60,40 +60,6 @@ void AudioFileManager::open_and_setup(const std::filesystem::path& filename)
     av_format_inject_global_side_data(m_ctx_data->format_ctx.get());
 }
 
-void AudioFileManager::stream_open()
-{
-    m_ctx_data->codec_ctx = std::shared_ptr<AVCodecContext> { avcodec_alloc_context3(nullptr), [](::AVCodecContext* p) { ::avcodec_free_context(&p); } };
-
-    int ret = avcodec_parameters_to_context(m_ctx_data->codec_ctx.get(), m_ctx_data->format_ctx->streams[m_streamIndex]->codecpar);
-    if (ret < 0)
-    {
-        throw std::runtime_error(std::format("avcodec_parameters_to_context failed with code: {}", ret));
-    }
-
-    m_ctx_data->codec_ctx->pkt_timebase = m_ctx_data->format_ctx->streams[m_streamIndex]->time_base;
-    const auto* codec = avcodec_find_decoder(m_ctx_data->codec_ctx->codec_id);
-
-    if (!codec)
-    {
-        throw std::runtime_error("Failed to find codec");
-    }
-
-    m_ctx_data->codec_ctx->codec_id = codec->id;
-
-    ret = avcodec_open2(m_ctx_data->codec_ctx.get(), codec, nullptr);
-    if (ret < 0)
-    {
-        throw std::runtime_error("Failed to open codec");
-    }
-
-    if (m_ctx_data->codec_ctx->codec_type != AVMEDIA_TYPE_AUDIO)
-    {
-        throw std::runtime_error("Codec is of wrong type");
-    }
-
-    m_ctx_data->format_ctx->streams[m_streamIndex]->discard = AVDISCARD_DEFAULT;
-}
-
 void AudioFileManager::find_stream()
 {
     int err = avformat_find_stream_info(m_ctx_data->format_ctx.get(), nullptr);
@@ -124,6 +90,41 @@ void AudioFileManager::find_stream()
     {
         throw std::runtime_error("Stream index < 0\n");
     }
+}
+
+void AudioFileManager::stream_open()
+{
+    m_ctx_data->codec_ctx = std::shared_ptr<AVCodecContext> { avcodec_alloc_context3(nullptr), [](::AVCodecContext* p) { ::avcodec_free_context(&p); } };
+
+    int ret = avcodec_parameters_to_context(m_ctx_data->codec_ctx.get(), m_ctx_data->format_ctx->streams[m_streamIndex]->codecpar);
+    if (ret < 0)
+    {
+        throw std::runtime_error(std::format("avcodec_parameters_to_context failed with code: {}", ret));
+    }
+
+    m_ctx_data->codec_ctx->pkt_timebase = m_ctx_data->format_ctx->streams[m_streamIndex]->time_base;
+
+    const auto* codec = avcodec_find_decoder(m_ctx_data->codec_ctx->codec_id);
+    if (!codec)
+    {
+        throw std::runtime_error(std::format("Failed to find decoder for {} codec_id", static_cast<int>(m_ctx_data->codec_ctx->codec_id)));
+    }
+
+    // TODO: This line seems redundant
+    m_ctx_data->codec_ctx->codec_id = codec->id;
+
+    ret = avcodec_open2(m_ctx_data->codec_ctx.get(), codec, nullptr);
+    if (ret < 0)
+    {
+        throw std::runtime_error("Failed to open codec");
+    }
+
+    if (m_ctx_data->codec_ctx->codec_type != AVMEDIA_TYPE_AUDIO)
+    {
+        throw std::runtime_error("Codec is of wrong type");
+    }
+
+    m_ctx_data->format_ctx->streams[m_streamIndex]->discard = AVDISCARD_DEFAULT;
 }
 
 AudioLoop::AudioLoop(const std::filesystem::path &path )
