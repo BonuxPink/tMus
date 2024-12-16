@@ -39,8 +39,6 @@ struct Config
 
     explicit Config(std::filesystem::path ConfigPath, std::shared_ptr<CommandProcessor>);
 
-    using MyVec = std::vector<std::pair<std::string, SmartKey>>;
-
     [[nodiscard]] bool ProcessKeybinding(ncinput ni);
 
     [[nodiscard]] int GetVolume() noexcept
@@ -56,7 +54,6 @@ private:
     };
 
     std::shared_ptr<CommandProcessor> m_cmdProc;
-    MyVec funcs;
 
     std::vector<Keybind> m_keybindingsSection;
     std::unordered_map<std::string, int> m_audioSection;

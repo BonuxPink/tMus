@@ -42,8 +42,6 @@ void Config::ParseConfig()
 
     for (const auto& [keybind, function] : parser["Keybindings"])
     {
-        funcs.push_back({ keybind, function });
-
         std::uint32_t key = 0;
 
         // If it's not a single letter
