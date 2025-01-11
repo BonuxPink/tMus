@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Dāniels Ponamarjovs <bonux@duck.com>
+ * Copyright (C) 2023-2025 Dāniels Ponamarjovs <bonux@duck.com>
  *
  * This file is part of tMus.
  *
