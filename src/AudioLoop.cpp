@@ -23,7 +23,7 @@
 #include "util.hpp"
 
 AudioFileManager::AudioFileManager(const std::filesystem::path& filename, ContextData& ctx_data)
-    : m_ctx_data      { &ctx_data }
+    : m_ctx_data { &ctx_data }
 {
     open_and_setup(filename);
     find_stream();

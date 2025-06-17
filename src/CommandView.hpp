@@ -36,8 +36,10 @@ public:
     [[nodiscard]] bool isFocused() const noexcept
     { return m_focus; }
 
+#ifdef DEBUG
     [[nodiscard]] const std::shared_ptr<CommandProcessor> getCmdProc() const noexcept
     { return m_cmdProc; }
+#endif
 
 private:
 

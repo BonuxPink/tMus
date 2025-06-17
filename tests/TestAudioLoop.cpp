@@ -22,7 +22,6 @@
 #include "globals.hpp"
 #include "ut.hpp"
 #include "tMus.hpp"
-#include "StatusView.hpp"
 
 using namespace boost::ut;
 
@@ -72,7 +71,6 @@ int main()
 
     "AudioLoop"_test = [&]
     {
-#if 0
         notcurses_options opts{ .termtype = nullptr,
                                 .loglevel = NCLOGLEVEL_FATAL,
                                 .margin_t = 0, .margin_r = 0,
@@ -91,7 +89,6 @@ int main()
         auto can_be_stopped = [&](std::stop_token st)
         {
             AudioLoop loop{ correct };
-            StatusView::Create(loop.getContextData());
             loop.consumer_loop(st);
         };
 
@@ -105,7 +102,8 @@ int main()
         Globals::stop_request = true;
         th = std::jthread { can_be_stopped };
 
+        th.join();
+
         expect (th.joinable() == false);
-#endif
     };
 }

@@ -23,6 +23,7 @@
 #include "CommandView.hpp"
 
 using namespace boost::ut;
+using namespace boost::ut::bdd;
 using namespace std::chrono_literals;
 
 int main()
@@ -50,6 +51,32 @@ int main()
         CommandView view{ std::move(plane), com };
 
         view.draw();
+
+        expect (not view.isFocused());
+
+        when ("User input is ':'") = [&]
+        {
+            ncinput ni;
+            ni.utf8[0] = ':'; // If input comes as ':'
+            view.handle_input(ni);
+
+            then ("CommandView is focused") = [&]
+            {
+                expect (view.isFocused());
+            };
+
+            when ("I pass enter") = [&]
+            {
+                ni.id = NCKEY_ESC;
+                view.handle_input(ni);
+
+                then ("Focus has been lost") = [&]
+                {
+                    expect (not view.isFocused());
+                };
+            };
+        };
+
 
         expect (view.get_notcurses() == stdPlane.get()->get_notcurses());
         expect (nc.render());

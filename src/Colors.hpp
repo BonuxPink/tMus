@@ -33,7 +33,7 @@ namespace Colors
 
 #include <cstdint>
 
-// the whole logging color implementation is inspired by libfmt
+// the whole logging color implementation is stolen from libfmt
 enum class color : uint32_t
 {
     NOCOLOR                 = 0,

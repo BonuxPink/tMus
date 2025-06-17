@@ -141,6 +141,9 @@ bool Add::execute(std::string_view str)
     }
 
     auto tmp = Albums(intermediate);
+
+    std::ranges::sort(tmp);
+
     m_ListView->setItems(std::move(tmp));
     m_ListView->SelectionCallback();
 
