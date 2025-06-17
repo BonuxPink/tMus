@@ -7,3 +7,6 @@
 *.o
 /tests/libdummyTest.so
 *.a
+/.cache/
+/tests/Test*
+/src/tMus
