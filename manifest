@@ -1,0 +1,7 @@
+: 1
+name: tMus
+version: 0.1.0-a.0.z
+type: exe
+language: c++
+license: GPL3
+description-file: manifest

@@ -1,0 +1,29 @@
+# Created automatically by the config module, but feel free to edit.
+#
+config.version = 1
+
+config.Release = false
+config.Coverage = false
+config.Tests = false
+
+config.cc.compiledb = tMus@./compile_commands.json
+
+config.cc.poptions = [null]
+config.cc.coptions = [null]
+config.cc.loptions = [null]
+config.cc.aoptions = [null]
+config.cc.libs = [null]
+
+config.cxx = g++
+config.cxx.poptions = [null]
+config.cxx.coptions = [null]
+config.cxx.loptions = [null]
+config.cxx.aoptions = [null]
+config.cxx.libs = [null]
+
+config.bin.lib = both
+config.bin.exe.lib = shared static
+config.bin.liba.lib = static shared
+config.bin.libs.lib = shared static
+config.bin.rpath = [null]
+config.bin.rpath_link = [null]

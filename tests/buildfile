@@ -1,0 +1,44 @@
+import libs += tMus%libus{tMusNoMain}
+
+cxx.coptions =+ "-ggdb"
+cxx.coptions += "-Wall" "-Wextra" "-Wpedantic"
+cxx.coptions += "-Wnull-dereference" "-Wconversion"
+cxx.coptions += "-Wno-sign-conversion" "-Wdeprecated"
+cxx.coptions += "-fstack-protector-strong" "-fcf-protection" "-fstack-clash-protection"
+
+# Leave this, as every buildfile should have a target.
+./: libs{dummyTest}: cxx{dummyTest.cpp}
+
+cxx.poptions =+ "-I/usr/include/pipewire-0.3" "-I/usr/include/spa-0.2/"
+cxx.poptions =+ "-I$src_root/../src/"
+cxx.loptions += -lnotcurses++ -lnotcurses-core -lavutil -lavformat -lavcodec -lswresample -lavdevice -lswscale -lpipewire-0.3 -Wl,--no-undefined
+cxx.coptions += "-D_GLIBCXX_ASSERTIONS"
+
+if $config.Tests
+{
+    tests = \
+        TestAudioLoop \
+        TestCommandView \
+        TestConfig \
+        TestFocus \
+        TestIniParse \
+        TestInit \
+        TestUtil
+
+    for test_file: $tests
+    {
+        ./: exe{$test_file}: cxx{$test_file}
+        exe{$test_file}: $libs
+        exe{$test_file}:
+        {
+            bin.whole = false
+            #cxx.loptions += -Wl,--allow-shlib-undefined
+        }
+    }
+}
+
+if $config.Coverage
+{
+    print "test coverage is on"
+    cxx.coptions += "--coverage" "-fcondition-coverage" "-fprofile-exclude-files='*include*'"
+}

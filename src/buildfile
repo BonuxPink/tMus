@@ -1,0 +1,52 @@
+## We want to compile a library 'lib', which defaults to shared library
+## We alse add utility target, libul
+## Compile all cxx and hxx files, recursively in all sub-dirs
+## And link the libarry with $libs
+#
+
+exe{tMus}: cxx{main} libus{tMusNoMain}
+libus{tMusNoMain}: {hxx cxx mxx}{** -main}
+
+### Build options.
+##
+
+## Includes options
+# Add all subfolders manually
+cxx.poptions =+ "-I$out_root" "-I$src_root/src/"
+
+cxx.poptions =+ "-I/usr/include/pipewire-0.3" "-I/usr/include/spa-0.2/"
+
+# Clang does not have these options
+cxx.coptions += "-Wduplicated-cond" "-Wduplicated-branches"
+
+# We have to use -fno-gnu-unique, otherwise dlclose does not unload (see comment above).
+cxx.coptions += "-Wall" "-Wextra" "-Wpedantic" "-Werror=uninitialized" "-fdiagnostics-color=always"
+cxx.coptions += "-Wnon-virtual-dtor" "-Wdouble-promotion"
+cxx.coptions += "-Wnull-dereference" "-Wconversion"
+cxx.coptions += "-Wno-sign-conversion" "-Wdeprecated" "-Wdeprecated-copy-dtor"
+cxx.coptions += "-fstack-protector-strong" "-fcf-protection" "-fstack-clash-protection"
+
+cxx.coptions += "-D_GLIBCXX_ASSERTIONS"
+
+if $config.Release
+{
+   #               clear identical code and strip
+   cxx.coptions += "-O3" "-s" "-fno-rtti" "-fvisibility=hidden" "-fuse-ld=mold"
+   cxx.coptions += "-D_FORTIFY_SOURCE=3 -fno-omit-frame-pointers -ftree-loop-vectorize"
+
+   #                    lto        put data and fn's into sections   clean unused sections
+   cxx.coptions += "-flto" "-fdata-sections" "-ffunction-sections" "-Wl,--gc-sections,--icf=safe"
+}
+else
+{
+   cxx.coptions += "-g" "-O0"
+}
+
+if $config.tMus.build.Coverage
+{
+   cxx.coptions += --coverage -fcondition-coverage
+}
+
+## Link options
+#
+cxx.loptions += -lnotcurses++ -lnotcurses-core -lavutil -lavformat -lavcodec -lswresample -lavdevice -lswscale -lpipewire-0.3 -Wl,--no-undefined

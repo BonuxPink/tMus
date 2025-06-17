@@ -1,3 +1,9 @@
 /tMus
 /obj/
 /tests/bin/
+*.lz4
+*.d
+/compile_commands.json
+*.o
+/tests/libdummyTest.so
+*.a

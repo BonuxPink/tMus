@@ -36,9 +36,7 @@ LDCXXFLAGS			:= -lnotcurses++ -lnotcurses-core -lavutil -lavformat -lavcodec -ls
 override CXXFLAGS	+= $(REQFLAGS) $(LDCXXFLAGS) $(OPTFLAGS) $(WARNFLAGS) -I/usr/include/pipewire-0.3/ -I/usr/include/spa-0.2/
 override LDFLAGS	+= $(LDCXXFLAGS) $(OPTFLAGS) $(WARNFLAGS)
 
-ifdef DEBUG
-	override OPTFLAGS := -DDEBUG -O0 -g3 -fno-omit-frame-pointer -fno-inline
-endif
+# override OPTFLAGS := -DDEBUG -O0 -g3 -fno-omit-frame-pointer -fno-inline
 
 SOURCES := $(wildcard $(SRCDIR)/*.cpp $(SRCDIR)/*.hpp)
 
