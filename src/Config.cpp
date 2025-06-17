@@ -105,7 +105,7 @@ void Config::ParseConfig()
 bool Config::ProcessKeybinding(ncinput ni)
 {
     auto id = ni.id;
-    util::Log("ID: {}, ch: {}\n", id, (char)id);
+    util::Log("ID: {}, ch: {}\n", id, static_cast<unsigned>(id));
     for (const auto& elem : m_keybindingsSection)
     {
         if (elem.key == id)
