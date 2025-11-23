@@ -56,8 +56,6 @@ void AudioFileManager::open_and_setup(const std::filesystem::path& filename)
         return static_cast<int>(Globals::stop_request);
     };
     m_ctx_data->format_ctx->interrupt_callback.opaque = nullptr;
-
-    av_format_inject_global_side_data(m_ctx_data->format_ctx.get());
 }
 
 void AudioFileManager::find_stream()
