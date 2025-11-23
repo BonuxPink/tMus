@@ -20,25 +20,19 @@
 #include "Config.hpp"
 #include "util.hpp"
 
-#include <string>
-
 namespace fs = std::filesystem;
 
 constinit std::string_view str{ "/tmp/" };
 
 Config::Config(fs::path ConfigPath, std::shared_ptr<CommandProcessor> cmdproc)
     : m_cmdProc{ std::move(cmdproc) }
-    , m_configFile{ ConfigPath }
 {
-    ParseConfig();
+    ParseConfig(ConfigPath);
 }
 
-void Config::ParseConfig()
+void Config::ParseConfig(const std::filesystem::path& ConfigPath)
 {
-    std::stringstream ss;
-    ss << m_configFile.rdbuf();
-
-    IniParser parser(ss);
+    IniParser parser{ ConfigPath.string() };
 
     for (const auto& [keybind, function] : parser["Keybindings"])
     {

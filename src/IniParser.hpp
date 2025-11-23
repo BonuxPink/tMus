@@ -29,8 +29,9 @@ struct SmartKey
     using VariantType = std::variant<int, std::string, float>;
 
     explicit SmartKey() = default;
-    explicit SmartKey(auto value)
-        : m_value{ value }
+
+    explicit SmartKey(auto&& value)
+        : m_value{ std::forward<decltype(value)>(value) }
     { }
 
     template <typename T>
@@ -41,12 +42,11 @@ struct SmartKey
 
     SmartKey& operator=(auto newvalue)
     {
-        m_value = newvalue;
+        m_value = std::forward<decltype(newvalue)>(newvalue);
         return *this;
     }
 
-    [[nodiscard]] inline constexpr auto GetValue() const noexcept
-    { return m_value; }
+    [[nodiscard]] inline const VariantType& GetValue() const noexcept { return m_value; }
 
 private:
     VariantType m_value;
@@ -54,29 +54,22 @@ private:
 
 struct IniSection
 {
-    explicit(true) IniSection(std::istream& f, std::string sName);
+    explicit(true) IniSection(std::string sName);
 
     [[nodiscard]] SmartKey& operator[](std::string_view index);
     [[nodiscard]] const SmartKey& operator[](std::string_view index) const;
 
-    auto begin() const noexcept
-    {
-        return values.begin();
-    }
+    auto begin() const noexcept { return entries.begin(); }
+    auto end()   const noexcept { return entries.end(); }
 
-    auto end() const noexcept
-    {
-        return values.end();
-    }
-
-    std::string section_name;
-    std::unordered_map<std::string, SmartKey> values;
+    std::string name;
+    std::unordered_map<std::string, SmartKey> entries;
 };
 
 class IniParser
 {
 public:
-    explicit(true) IniParser(std::istream& file);
+    explicit(true) IniParser(std::string_view filename);
 
     [[nodiscard]] auto getSectionCount() const noexcept
     {
@@ -89,5 +82,7 @@ public:
     void SaveToFile(std::string_view filename) const;
 
 private:
+    void parse_stream(std::istream& stream);
+
     std::vector<IniSection> m_sections;
 };

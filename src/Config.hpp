@@ -45,7 +45,7 @@ struct Config
     { return m_audioSection["volume"]; }
 
 private:
-    void ParseConfig();
+    void ParseConfig(const std::filesystem::path& ConfigPath);
 
     struct Keybind
     {
@@ -57,5 +57,4 @@ private:
 
     std::vector<Keybind> m_keybindingsSection;
     std::unordered_map<std::string, int> m_audioSection;
-    std::ifstream m_configFile;
 };
