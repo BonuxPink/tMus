@@ -22,6 +22,7 @@
 #include "FocusManager.hpp"
 
 #include <memory>
+#include <string>
 #include <vector>
 #include <filesystem>
 #include <functional>
@@ -41,8 +42,25 @@ class ListView;
 class ListView : public ncpp::Widget
 {
 public:
-    // Real length and path
-    using ItemType = std::pair<unsigned, std::filesystem::path>;
+    // A list row. `first`/`second` keep their historical meaning so existing
+    // call sites are untouched:
+    //   first   - display width in columns
+    //   second  - the target: a local filesystem path, or (in client mode) the
+    //             albumId / stream URL handed to the server / AudioLoop
+    //   display - label shown to the user; if empty, second.filename() is used
+    //             (so local browsing keeps showing file names for free).
+    struct ItemType
+    {
+        unsigned first {};
+        std::filesystem::path second {};
+        std::string display {};
+
+        // Member-wise lexicographic ordering (width, path, label). Provides the
+        // full set of comparisons std::ranges::sort needs (totally_ordered),
+        // matching the previous std::pair behaviour for the first two members.
+        friend auto operator<=>(const ItemType&, const ItemType&) = default;
+        friend bool operator==(const ItemType&, const ItemType&)  = default;
+    };
     using ItemContainer = std::vector<ItemType>;
 
     using enterFunc = std::function<bool(const std::filesystem::path&)>;

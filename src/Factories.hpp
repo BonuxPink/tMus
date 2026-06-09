@@ -37,7 +37,10 @@ std::tuple<ncpp::Plane, ncpp::Plane, ncpp::Plane> MakePlanes();
 
 std::unique_ptr<ncpp::Plane> MakeStatusPlane() noexcept;
 
-std::shared_ptr<CommandProcessor> MakeCommandProcessor(const std::shared_ptr<ListView>&, const std::shared_ptr<ListView>&) noexcept;
+class ServerClient;
+std::shared_ptr<CommandProcessor> MakeCommandProcessor(const std::shared_ptr<ListView>&,
+                                                       const std::shared_ptr<ListView>&,
+                                                       const std::shared_ptr<ServerClient>&) noexcept;
 
 using MakeViewFunc = std::function<ListView::ItemContainer(std::filesystem::path&&)>;
 ListView MakeView(ncpp::Plane&, MakeViewFunc);

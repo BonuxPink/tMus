@@ -435,6 +435,7 @@ void AudioLoop::consumer_loop(std::stop_token& t)
 
         m_statusView.draw(m_position_in_bytes);
 
+        // TODO: Do we need this code? Maybe it could be moved to pipewire
         if (m_paused == false)
         {
             std::scoped_lock lk{ m_buffer_mtx };

@@ -20,10 +20,10 @@
 #include "IniParser.hpp"
 
 #include <algorithm>
+#include <format>
 #include <fstream>
 #include <stdexcept>
 #include <string>
-#include <format>
 #include <utility>
 
 namespace rn = std::ranges;
@@ -45,27 +45,27 @@ namespace
     {
         if (value.find('.') != std::string_view::npos)
         {
-            float result{};
+            float result {};
             auto [ptr, ec] = std::from_chars(value.data(), value.data() + value.size(), result);
-            if (ec == std::errc{})
+            if (ec == std::errc {})
             {
-                return SmartKey{ result };
+                return SmartKey { result };
             }
         }
         else
         {
-            int result{};
+            int result {};
             auto [ptr, ec] = std::from_chars(value.data(), value.data() + value.size(), result);
-            if (ec == std::errc{} and ptr == value.data() + value.size())
-                return SmartKey{ result };
+            if (ec == std::errc {} and ptr == value.data() + value.size())
+                return SmartKey { result };
         }
 
-        return SmartKey{ std::string(value) };
+        return SmartKey { std::string(value) };
     }
-}
+} // namespace
 
-IniSection::IniSection(std::string name)
-    : name{ std::move(name) }
+IniSection::IniSection(std::string sName)
+    : name { std::move(sName) }
 { }
 
 SmartKey& IniSection::operator[](std::string_view key)
@@ -75,7 +75,7 @@ SmartKey& IniSection::operator[](std::string_view key)
 
 const SmartKey& IniSection::operator[](std::string_view key) const
 {
-    auto it = entries.find(std::string{ key });
+    auto it = entries.find(std::string { key });
     if (it == entries.end())
     {
         throw std::runtime_error(std::format("Key '{}' not found in section '{}'", key, name));
@@ -84,9 +84,10 @@ const SmartKey& IniSection::operator[](std::string_view key) const
     return it->second;
 }
 
-IniParser::IniParser(std::string_view filename)
+IniParser::IniParser(std::string_view filename, ParseOptions options)
+    : opts { options }
 {
-    std::ifstream file{ filename.data() };
+    std::ifstream file { filename.data() };
     if (not file)
         throw std::runtime_error(std::format("Cannot open file: {}", filename));
 
@@ -101,8 +102,11 @@ void IniParser::parse_stream(std::istream& stream)
     {
         // Trim
         std::string_view line = line_raw;
-        if (auto pos = line.find(';'); pos != std::string_view::npos)
-            line = line.substr(0, pos);
+        if (opts.strip_comments)
+        {
+            if (auto pos = line.find(';'); pos != std::string_view::npos)
+                line = line.substr(0, pos);
+        }
 
         line = TrimWhitespace(line);
         if (line.empty()) // Skip blank lines
@@ -116,7 +120,7 @@ void IniParser::parse_stream(std::istream& stream)
 
             auto name = line.substr(1, line.size() - 2);
 
-            m_sections.emplace_back(std::string{ name });
+            m_sections.emplace_back(std::string { name });
             continue;
         }
 
@@ -130,10 +134,10 @@ void IniParser::parse_stream(std::istream& stream)
 
             IniSection& current_section = m_sections.back();
 
-            auto key = TrimWhitespace(line.substr(0, eq_pos));
+            auto key   = TrimWhitespace(line.substr(0, eq_pos));
             auto value = TrimWhitespace(line.substr(eq_pos + 1));
 
-            current_section.entries.insert_or_assign(std::string{ key }, DetermineType(value));
+            current_section.entries.insert_or_assign(std::string { key }, DetermineType(value));
         }
         else
         {
@@ -144,10 +148,13 @@ void IniParser::parse_stream(std::istream& stream)
 
 IniSection& IniParser::operator[](std::string_view index)
 {
-    auto ret = rn::find_if(m_sections, [=](const auto& section_name)
-    {
-        return section_name == index;
-    }, &IniSection::name);
+    auto ret = rn::find_if(
+        m_sections,
+        [=](const auto& section_name)
+        {
+            return section_name == index;
+        },
+        &IniSection::name);
 
     if (ret == m_sections.end())
     {
@@ -158,10 +165,13 @@ IniSection& IniParser::operator[](std::string_view index)
 
 const IniSection& IniParser::operator[](std::string_view index) const
 {
-    auto ret = rn::find_if(m_sections, [=](const auto& section_name)
-    {
-        return section_name == index;
-    }, &IniSection::name);
+    auto ret = rn::find_if(
+        m_sections,
+        [=](const auto& section_name)
+        {
+            return section_name == index;
+        },
+        &IniSection::name);
 
     if (ret == m_sections.end())
     {
@@ -172,7 +182,7 @@ const IniSection& IniParser::operator[](std::string_view index) const
 
 void IniParser::SaveToFile(std::string_view filename) const
 {
-    std::fstream fs{ filename.data(), std::fstream::out };
+    std::fstream fs { filename.data(), std::fstream::out };
 
     if (not fs.is_open())
     {
@@ -191,8 +201,7 @@ void IniParser::SaveToFile(std::string_view filename) const
             throw std::runtime_error("Something is wrong here");
     };
 
-
-    std::size_t index{};
+    std::size_t index {};
     for (const auto& elem : m_sections)
     {
         fs << '[' << elem.name << ']' << '\n';

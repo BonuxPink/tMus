@@ -319,7 +319,9 @@ void PrintLine::operator()(const ncpp::Plane& ncp, const ListView::ItemType& ite
 {
     auto dimX = ncp.get_dim_x();
     std::size_t sizeInBytes{ 0 };
-    auto str = item.second.filename().string();
+    // In client mode `second` is a stream URL / albumId, so prefer the explicit
+    // display label; fall back to the file name for local browsing.
+    auto str = item.display.empty() ? item.second.filename().string() : item.display;
     const auto* cStr = str.c_str();
 
     ncplane_cursor_move_yx(ncp.to_ncplane(), yoff, 2);

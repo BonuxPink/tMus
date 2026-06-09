@@ -24,32 +24,61 @@
 #include "Renderer.hpp"
 #include "util.hpp"
 #include "Factories.hpp"
+#include "ServerClient.hpp"
 
 #include <algorithm>
 #include <ncpp/NotCurses.hh>
 #include <fcntl.h>
 
-static void SetupCallbacks(ListView& albumViewRef, ListView& songViewRef, CommandView& cmdView)
+static void SetupCallbacks(ListView& albumViewRef, ListView& songViewRef, CommandView& cmdView,
+                           std::shared_ptr<ServerClient> client)
 {
-    albumViewRef.setSelectCallback([&songViewRef](const std::filesystem::path& path)
+    albumViewRef.setSelectCallback([&songViewRef, client](const std::filesystem::path& path)
     {
         util::Log(color::moccasin, "album callback\n");
         std::vector<ListView::ItemType> songVec;
-        for (const auto& file : std::filesystem::directory_iterator(path))
-        {
-            const auto ext = file.path().extension();
-            if (ext == ".cue" || ext == ".jpg" || ext == ".png" || ext == ".m3u")
-                continue;
 
-            unsigned cols = (unsigned)ncstrwidth(file.path().filename().c_str(), nullptr, nullptr);
-            songVec.push_back({ cols, file.path() });
+        if (client->connected())
+        {
+            // Client mode: `path` carries the albumId. Fetch its tracks from the
+            // server and store each track's stream URL as the play target.
+            for (const auto& t : client->albumTracks(path.string()))
+            {
+                std::string label = t.track_no
+                    ? std::format("{:02} {} - {}", *t.track_no, t.artist, t.title)
+                    : std::format("{} - {}", t.artist, t.title);
+
+                unsigned cols = (unsigned)ncstrwidth(label.c_str(), nullptr, nullptr);
+
+                ListView::ItemType item;
+                item.first   = cols;
+                item.second  = t.stream_url; // avformat opens http:// directly
+                item.display = std::move(label);
+                songVec.push_back(std::move(item));
+            }
+            // Keep server order (track order); no local sort.
         }
-
-        // Sort the items alphabetically
-        std::ranges::sort(songVec, [](const auto& a, const auto& b)
+        else
         {
-            return a.second.string() < b.second.string();
-        });
+            for (const auto& file : std::filesystem::directory_iterator(path))
+            {
+                const auto ext = file.path().extension();
+                if (ext == ".cue" || ext == ".jpg" || ext == ".png" || ext == ".m3u")
+                    continue;
+
+                unsigned cols = (unsigned)ncstrwidth(file.path().filename().c_str(), nullptr, nullptr);
+                ListView::ItemType item;
+                item.first  = cols;
+                item.second = file.path();
+                songVec.push_back(std::move(item));
+            }
+
+            // Sort the items alphabetically
+            std::ranges::sort(songVec, [](const auto& a, const auto& b)
+            {
+                return a.second.string() < b.second.string();
+            });
+        }
 
         songViewRef.setItems(std::move(songVec));
 
@@ -103,7 +132,9 @@ tMus::tMus(const std::shared_ptr<FocusManager>& manager)
     const auto albumView = std::make_shared<ListView>(std::move(albumPlane), manager->m_CurrentFocus);
     const auto songView  = std::make_shared<ListView>(std::move(songPlane), manager->m_LastFocus);
 
-    auto cmdProcessor = MakeCommandProcessor(albumView, songView);
+    m_client = std::make_shared<ServerClient>();
+
+    auto cmdProcessor = MakeCommandProcessor(albumView, songView, m_client);
 
     cfg = std::make_shared<Config>( util::GetUserConfigDir() / "tMus.ini", cmdProcessor );
 
@@ -129,7 +160,8 @@ tMus::tMus(const std::shared_ptr<FocusManager>& manager)
 
     SetupCallbacks(*std::get<std::shared_ptr<ListView>>(albumViewRef),
                    *std::get<std::shared_ptr<ListView>>(songViewRef),
-                   *std::get<std::shared_ptr<CommandView>>(cmdViewRef));
+                   *std::get<std::shared_ptr<CommandView>>(cmdViewRef),
+                   m_client);
 }
 
 void tMus::loop()

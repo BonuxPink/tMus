@@ -25,6 +25,8 @@
 #include "CommandView.hpp"
 #include "Config.hpp"
 
+class ServerClient;
+
 class tMus
 {
 public:
@@ -44,4 +46,5 @@ public:
 private:
     std::array<ViewLike, 3> m_views;
     std::shared_ptr<Config> cfg;
+    std::shared_ptr<ServerClient> m_client;
 };

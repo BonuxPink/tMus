@@ -1,12 +1,12 @@
-/tMus
-/obj/
-/tests/bin/
-*.lz4
-*.d
+# CMake build tree
+/build/
+
+# Editor / tooling
 /compile_commands.json
-*.o
-/tests/libdummyTest.so
-*.a
 /.cache/
-/tests/Test*
-/src/tMus
+
+# Compiled objects / archives (in case of in-tree builds)
+*.o
+*.a
+*.d
+*.so

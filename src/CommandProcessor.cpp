@@ -19,12 +19,14 @@
 
 #include "AudioLoop.hpp"
 #include "CommandProcessor.hpp"
+#include "ServerClient.hpp"
 #include "globals.hpp"
 #include "util.hpp"
 
 #include <algorithm>
 #include <exception>
 #include <filesystem>
+#include <format>
 #include <optional>
 #include <pstl/glue_algorithm_defs.h>
 #include <string>
@@ -180,6 +182,50 @@ bool Add::complete(std::vector<std::uint32_t>& vec) const
     }
 
     return false;
+}
+
+Connect::Connect(std::shared_ptr<ListView> listView, std::shared_ptr<ServerClient> client)
+    : m_ListView{ std::move(listView) }
+    , m_Client{ std::move(client) }
+{ }
+
+bool Connect::execute(std::string_view url)
+{
+    if (url.empty())
+    {
+        util::Log(color::red, "connect: usage :connect <server-url>\n");
+        return false;
+    }
+
+    try
+    {
+        m_Client->connect(std::string{ url });
+    }
+    catch (const std::exception& e)
+    {
+        util::Log(color::red, "connect failed: {}\n", e.what());
+        return false;
+    }
+
+    ListView::ItemContainer items;
+    for (const auto& a : m_Client->albums())
+    {
+        std::string label = a.artist.empty() ? a.name : std::format("{} - {}", a.artist, a.name);
+        unsigned cols = static_cast<unsigned>(ncstrwidth(label.c_str(), nullptr, nullptr));
+
+        ListView::ItemType item;
+        item.first   = cols;
+        item.second  = a.id;     // albumId; the album-select callback fetches its tracks
+        item.display = std::move(label);
+        items.push_back(std::move(item));
+    }
+
+    util::Log(color::green, "connected to {}: {} albums\n", m_Client->baseUrl(), items.size());
+
+    m_ListView->setItems(std::move(items));
+    m_ListView->SelectionCallback();
+
+    return true;
 }
 
 Play::Play(std::shared_ptr<ListView> listView, std::shared_ptr<ListView> songView)

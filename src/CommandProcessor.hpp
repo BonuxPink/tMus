@@ -25,6 +25,8 @@
 #include <string_view>
 #include <unordered_map>
 
+class ServerClient;
+
 struct Command
 {
     Command()                           = default;
@@ -65,6 +67,21 @@ private:
     };
 
     void CompletePath(Type, std::vector<std::uint32_t>&) const;
+};
+
+// :connect <url>  - point the album view at a tMus-server instead of the
+// local filesystem. Populates the album view from GET /library/albums; album
+// selection then fetches tracks from the server and plays stream URLs.
+struct Connect : public Command
+{
+    explicit Connect(std::shared_ptr<ListView>, std::shared_ptr<ServerClient>);
+    bool execute(std::string_view) override;
+    [[nodiscard]] bool complete(std::vector<std::uint32_t>&) const override
+    { return false; }
+
+private:
+    std::shared_ptr<ListView> m_ListView;
+    std::shared_ptr<ServerClient> m_Client;
 };
 
 struct Play : public Command

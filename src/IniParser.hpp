@@ -19,10 +19,10 @@
 
 #pragma once
 
-#include <vector>
+#include <string>
 #include <unordered_map>
 #include <variant>
-#include <string>
+#include <vector>
 
 struct SmartKey
 {
@@ -30,26 +30,43 @@ struct SmartKey
 
     explicit SmartKey() = default;
 
-    explicit SmartKey(auto&& value)
-        : m_value{ std::forward<decltype(value)>(value) }
+    explicit SmartKey(auto&& v)
+        : value { std::forward<decltype(v)>(v) }
     { }
 
     template <typename T>
     [[nodiscard]] T as() const
     {
-        return std::get<T>(m_value);
+        return std::get<T>(value);
+    }
+
+    [[nodiscard]] std::string as_string() const
+    {
+        if (std::holds_alternative<std::string>(value))
+            return std::get<std::string>(value);
+
+        if (std::holds_alternative<int>(value))
+            return std::to_string(std::get<int>(value));
+
+        if (std::holds_alternative<float>(value))
+            return std::to_string(std::get<float>(value));
+
+        return {};
     }
 
     SmartKey& operator=(auto newvalue)
     {
-        m_value = std::forward<decltype(newvalue)>(newvalue);
+        value = std::forward<decltype(newvalue)>(newvalue);
         return *this;
     }
 
-    [[nodiscard]] inline const VariantType& GetValue() const noexcept { return m_value; }
+    [[nodiscard]] inline const VariantType& GetValue() const noexcept
+    {
+        return value;
+    }
 
 private:
-    VariantType m_value;
+    VariantType value;
 };
 
 struct IniSection
@@ -59,17 +76,28 @@ struct IniSection
     [[nodiscard]] SmartKey& operator[](std::string_view index);
     [[nodiscard]] const SmartKey& operator[](std::string_view index) const;
 
-    auto begin() const noexcept { return entries.begin(); }
-    auto end()   const noexcept { return entries.end(); }
+    auto begin() const noexcept
+    {
+        return entries.begin();
+    }
+    auto end() const noexcept
+    {
+        return entries.end();
+    }
 
     std::string name;
     std::unordered_map<std::string, SmartKey> entries;
 };
 
+struct ParseOptions
+{
+    bool strip_comments = true;
+};
+
 class IniParser
 {
 public:
-    explicit(true) IniParser(std::string_view filename);
+    explicit IniParser(std::string_view filename, ParseOptions opts = ParseOptions {});
 
     [[nodiscard]] auto getSectionCount() const noexcept
     {
@@ -77,6 +105,10 @@ public:
     }
 
     [[nodiscard]] IniSection& operator[](std::string_view index);
+    [[nodiscard]] const std::vector<IniSection>& sections() const noexcept
+    {
+        return m_sections;
+    }
     [[nodiscard]] const IniSection& operator[](std::string_view index) const;
 
     void SaveToFile(std::string_view filename) const;
@@ -84,5 +116,6 @@ public:
 private:
     void parse_stream(std::istream& stream);
 
+    ParseOptions opts;
     std::vector<IniSection> m_sections;
 };

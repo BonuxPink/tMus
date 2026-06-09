@@ -26,6 +26,7 @@
 
 #include <stdexcept>
 
+// TODO: Console view
 int main() try
 {
     notcurses_options opts{ .termtype = nullptr,

@@ -139,11 +139,13 @@ std::tuple<ncpp::Plane, ncpp::Plane, ncpp::Plane> MakePlanes()
 }
 
 std::shared_ptr<CommandProcessor> MakeCommandProcessor(const std::shared_ptr<ListView>& albumViewPtr,
-                                                       const std::shared_ptr<ListView>& songViewPtr) noexcept
+                                                       const std::shared_ptr<ListView>& songViewPtr,
+                                                       const std::shared_ptr<ServerClient>& client) noexcept
 {
     auto com = std::make_shared<CommandProcessor>();
     com->registerCommand("/",            std::make_shared<SearchCommand>(albumViewPtr, songViewPtr)); // Special command
     com->registerCommand("add",          std::make_shared<Add>(albumViewPtr));
+    com->registerCommand("connect",      std::make_shared<Connect>(albumViewPtr, client));
     com->registerCommand("hello",        std::make_shared<HelloWorld>());
     com->registerCommand("clear",        std::make_shared<Clear>(albumViewPtr, songViewPtr));
     com->registerCommand("bind",         std::make_shared<BindCommand>());
