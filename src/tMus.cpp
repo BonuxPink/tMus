@@ -186,10 +186,17 @@ void tMus::loop()
         if (ni.evtype == ncpp::EvType::Release)
             continue;
 
-        util::Log(color::yellow, "----------------------------------\n");
+        // notcurses' enhanced (kitty) keyboard protocol reports the bare keycap
+        // in id/utf8 (';' for Shift+';'), with Shift as a separate modifier bit.
+        // eff_text is the codepoint *after* modifiers are applied (':'), which is
+        // what we actually want for command detection and typing. Fall back to id.
+        const std::uint32_t eff = ni.eff_text[0] ? ni.eff_text[0] : ni.id;
+
+        util::Log(color::yellow, "--- id:{} utf8:'{}' eff:{} mods:{:#x} ---\n",
+                  input, ni.utf8, eff, ni.modifiers);
 
         if (const auto& cmdView = std::get<std::shared_ptr<CommandView>>(m_views[0]);
-            input == ':' || cmdView->isFocused())
+            eff == ':' || eff == '/' || cmdView->isFocused())
         {
             cmdView->handle_input(ni);
         }

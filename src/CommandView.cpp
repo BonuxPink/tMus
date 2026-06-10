@@ -86,6 +86,10 @@ void CommandView::draw()
 
 bool CommandView::handle_input(const ncinput& ni) noexcept
 {
+    // Effective codepoint with modifiers applied (':' for Shift+';'), falling
+    // back to the raw key id when the terminal doesn't report eff_text.
+    const std::uint32_t eff = ni.eff_text[0] ? ni.eff_text[0] : ni.id;
+
     if (m_focus)
     {
         util::Log("Has focus\n");
@@ -126,7 +130,11 @@ bool CommandView::handle_input(const ncinput& ni) noexcept
             Globals::lastCompletion.clear();
             return true;
         default:
-            m_commandBuffer.push_back(ni.id);
+            // Only real text belongs in the buffer. Reject control codepoints
+            // and synthesized key events (Shift/Ctrl/arrows/F-keys/…), which
+            // otherwise get truncated to junk like '#'/'$' by static_cast<char>.
+            if (eff >= 0x20 && !nckey_synthesized_p(eff))
+                m_commandBuffer.push_back(eff);
             break;
         }
 
@@ -138,14 +146,14 @@ bool CommandView::handle_input(const ncinput& ni) noexcept
         draw();
         return true;
     }
-    else if (ni.utf8[0] == ':')
+    else if (eff == ':')
     {
         util::Log(color::teal, "pressed ':'\n");
         m_focus = true;
         draw();
         return true;
     }
-    else if (ni.utf8[0] == '/') // '/' is a special command
+    else if (eff == '/') // '/' is a special command
     {
         util::Log(color::yellow, "/ pressed\n");
         m_focus = true;

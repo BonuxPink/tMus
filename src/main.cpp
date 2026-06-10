@@ -29,15 +29,18 @@
 // TODO: Console view
 int main() try
 {
+    tMus::InitLog();
+    util::Log(color::green, "=== tMus starting ===\n");
+
     notcurses_options opts{ .termtype = nullptr,
                             .loglevel = NCLOGLEVEL_WARNING,
                             .margin_t = 0, .margin_r = 0,
                             .margin_b = 0, .margin_l = 0,
-                            .flags = NCOPTION_SUPPRESS_BANNERS | NCOPTION_CLI_MODE };
+                            .flags = NCOPTION_SUPPRESS_BANNERS };
 
     ncpp::NotCurses nc{ opts };
+    util::Log(color::green, "notcurses initialised\n");
 
-    tMus::InitLog();
     tMus::Init();
 
     const auto albumViewFocus = std::make_shared<Focus>();
