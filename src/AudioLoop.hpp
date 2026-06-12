@@ -211,7 +211,10 @@ private:
 class AudioLoop
 {
 public:
-    explicit AudioLoop(const std::filesystem::path& path);
+    // `title` is what the status line shows; when empty (local playback) the
+    // file name portion of `path` is used instead. `startSec` seeks before
+    // playback begins (cue-sheet virtual tracks start mid-file).
+    explicit AudioLoop(const std::filesystem::path& path, std::string title = {}, int startSec = 0);
     ~AudioLoop();
 
     AudioLoop(const AudioLoop&)            = delete;

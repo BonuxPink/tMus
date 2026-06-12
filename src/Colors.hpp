@@ -26,6 +26,8 @@ namespace Colors
 {
     inline constexpr auto DefaultBackground { NCCHANNELS_INITIALIZER(0, 0, 0, 204, 201, 195) };
     inline constexpr auto TextColor         { NCCHANNELS_INITIALIZER(0, 0, 0, 255, 255, 255) };
+    // Selected-row bar: light text on a darkened version of the beige background.
+    inline constexpr auto Highlight         { NCCHANNELS_INITIALIZER(245, 245, 240, 96, 93, 88) };
     inline constexpr auto StatusTextColor   { NCCHANNELS_INITIALIZER(255, 255, 255, 0, 0, 0)};
 }
 

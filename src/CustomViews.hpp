@@ -54,6 +54,9 @@ public:
         unsigned first {};
         std::filesystem::path second {};
         std::string display {};
+        // Seconds into the target to start playback at (cue-sheet virtual
+        // tracks share one rip file; each starts at its own offset).
+        int startSec {};
 
         // Member-wise lexicographic ordering (width, path, label). Provides the
         // full set of comparisons std::ranges::sort needs (totally_ordered),
@@ -63,7 +66,10 @@ public:
     };
     using ItemContainer = std::vector<ItemType>;
 
-    using enterFunc = std::function<bool(const std::filesystem::path&)>;
+    // Receives the whole item, not just the target path: in client mode the
+    // path is an opaque stream URL, so the display label is the only
+    // human-readable name the handler (e.g. the status line) can show.
+    using enterFunc = std::function<bool(const ItemType&)>;
     using selectFunc = std::function<bool(const std::filesystem::path&)>;
 
     ListView(ncpp::Plane&&, std::shared_ptr<Focus>);

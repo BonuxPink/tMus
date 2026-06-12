@@ -19,6 +19,7 @@
 
 #include "util.hpp"
 #include "CustomViews.hpp"
+#include "Colors.hpp"
 
 #include <filesystem>
 #include <stdexcept>
@@ -45,37 +46,19 @@ void ListView::draw()
 {
     unsigned dimy = 0, dimx = 0;
     m_ncp.get_dim(dimy, dimx);
+
     static int draw = 0;
     util::Log(color::teal, "Draw---------------------------{}\n", draw++);
-    m_ncp.get_dim(dimy, dimx);
 
-    m_ncp.cursor_move(1, 1);
-
-    for (unsigned i = 1; i < dimy; ++i)
-    {
-        ncpp::Cell tmp{ std::uint32_t(0) };
-        m_ncp.hline(tmp, dimx - 2);
-
-        m_ncp.cursor_move(static_cast<int>(i), 1);
-    }
-
-    m_ncp.cursor_move(1, 1);
+    // Reset the whole plane to its base cell before redrawing. ncplane_erase
+    // correctly obliterates wide (CJK) glyphs together with their right-half
+    // spacer cells; the previous manual hline clear left those spacers behind,
+    // showing up as black bars after double-width text like "サニーボーイ".
+    m_ncp.erase();
 
     unsigned printidx = m_startdisp;
     for (int yoff = 1; yoff < static_cast<int>(dimy); ++yoff)
     {
-        if (!m_ncp.cursor_move(yoff, static_cast<int>(dimx) - 1))
-        {
-            util::Log(color::yellow, "Failed to move cursor y:{}:{} x:{}:{}\n", yoff, dimy, dimx, dimx);
-            return;
-        }
-
-        for (unsigned i = dimx + 1; i < dimx - 1; ++i)
-        {
-            ncpp::Cell trancs{};
-            m_ncp.putc(trancs);
-        }
-
         if (auto size = m_items.size(); size > printidx)
         {
             try
@@ -87,7 +70,12 @@ void ListView::draw()
                 }
                 else
                 {
-                    m_ncp.set_channels(0);
+                    // Draw on the same beige base the plane is cleared to, so the
+                    // background channel of every cell - including the right-half
+                    // spacer of fullwidth glyphs and the fullwidth space U+3000 -
+                    // matches. set_channels(0) used the terminal default bg, which
+                    // shows up as black bars behind/after wide text.
+                    m_ncp.set_channels(Colors::DefaultBackground);
                     auto item = m_items.at(printidx);
                     std::invoke( PrintLine{}, m_ncp, item, yoff );
                 }
@@ -196,8 +184,7 @@ bool ListView::EnterCallback()
     {
         try
         {
-            auto sec = m_items.at(m_selected).second;
-            m_enterCallback(sec);
+            m_enterCallback(m_items.at(m_selected));
             return true;
         }
         catch (const std::runtime_error& e)
@@ -257,20 +244,22 @@ void ListView::setItems(ItemContainer items) noexcept
 
 void ListView::ColorSelected() const
 {
-    if (m_Focus->hasFocus())
-    {
-        auto curCh = m_ncp.get_channels();
+    unsigned dimy = 0, dimx = 0;
+    m_ncp.get_dim(dimy, dimx);
 
-        ncchannels_set_bg_alpha(&curCh, NCALPHA_BLEND);
-        m_ncp.set_channels(curCh);
-    }
-    else
-    {
-        m_ncp.set_channels(0);
-    }
+    // Focus-change notifies can fire while the list is empty or the selection
+    // is scrolled out of the visible window.
+    if (m_items.empty() || m_selected < m_startdisp || m_selected - m_startdisp >= dimy - 2)
+        return;
+
+    // Use an explicit highlight color. The previous NCALPHA_BLEND approach
+    // blended the row background with the plane below - but both are the same
+    // beige (DefaultBackground), so the blend was a no-op and the selection
+    // was invisible (or picked up whatever channels happened to be set last).
+    m_ncp.set_channels(m_Focus->hasFocus() ? Colors::Highlight : Colors::DefaultBackground);
 
     auto item = m_items.at(m_selected);
-    auto yoff = m_selected + 1 - m_startdisp;
+    auto yoff = static_cast<int>(m_selected + 1 - m_startdisp);
     std::invoke( PrintLine{}, m_ncp, item, yoff );
 }
 
@@ -345,5 +334,12 @@ void PrintLine::operator()(const ncpp::Plane& ncp, const ListView::ItemType& ite
     if (item.first > dimX - 4)
     {
         ncp.putc("…");
+    }
+
+    // Pad to the right edge so the row's background channel forms a continuous
+    // bar (the selection highlight would otherwise stop at the last glyph).
+    for (unsigned x = ncp.cursor_x(); x < dimX - 2; ++x)
+    {
+        ncp.putc(' ');
     }
 }

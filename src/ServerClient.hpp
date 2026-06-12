@@ -50,6 +50,12 @@ struct RemoteTrack
     std::string album;
     std::optional<int> track_no;
     std::optional<int> duration_s;
+    std::string file_name; // base name of the source file; display fallback for untagged tracks
+
+    // Cue-sheet virtual track: stream_url serves the whole rip file and this
+    // track is the [start_s, end_s) window of it.
+    std::optional<int> start_s;
+    std::optional<int> end_s;
 
     std::string stream_url; // ready-to-open URL, e.g. http://host:8088/stream/8
 };

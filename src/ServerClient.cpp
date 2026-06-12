@@ -126,6 +126,9 @@ std::vector<RemoteTrack> ServerClient::albumTracks(const std::string& albumId)
         track.album      = t.get("album", "").asString();
         track.track_no   = opt_int(t, "trackNo");
         track.duration_s = opt_int(t, "durationSec");
+        track.file_name  = t.get("fileName", "").asString();
+        track.start_s    = opt_int(t, "startSec");
+        track.end_s      = opt_int(t, "endSec");
         track.stream_url = streamUrl(track.id);
         out.push_back(std::move(track));
     }

@@ -45,7 +45,7 @@ void StatusView::draw(std::size_t time) const
 
     m_ncp->cursor_move(dimy - 1, 0);
 
-    if (m_url.empty())
+    if (m_title.empty())
         return;
 
     auto secondsToTime = [](int seconds)
@@ -68,7 +68,7 @@ void StatusView::draw(std::size_t time) const
     const auto durationStr      = secondsToTime(static_cast<int>(m_ctx_data->format_ctx->duration / AV_TIME_BASE));
     const auto currentSecondStr = secondsToTime(static_cast<int>(seconds));
 
-    const auto filename = std::format("{} > {} / {}", m_url, currentSecondStr, durationStr);
+    const auto filename = std::format("{} > {} / {}", m_title, currentSecondStr, durationStr);
     const auto* cStr    = filename.c_str();
 
     std::size_t sizeInBytes{ 0 };

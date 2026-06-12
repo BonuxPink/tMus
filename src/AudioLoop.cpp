@@ -125,14 +125,21 @@ void AudioFileManager::stream_open()
     m_ctx_data->format_ctx->streams[m_streamIndex]->discard = AVDISCARD_DEFAULT;
 }
 
-AudioLoop::AudioLoop(const std::filesystem::path &path )
+AudioLoop::AudioLoop(const std::filesystem::path &path, std::string title, int startSec)
     : m_produced_buf { Wrap::make_aligned_buffer() }
     , m_ctx_data     {}
     , manager        { path, m_ctx_data }
     , swr            { *m_ctx_data.codec_ctx }
-    , m_statusView   { m_ctx_data, swr.getAudioSettings() }
+    , m_statusView   { m_ctx_data, swr.getAudioSettings(), std::move(title) }
     , m_pipewire     { swr.getAudioSettings() }
 {
+    if (startSec > 0)
+    {
+        const auto target = static_cast<std::int64_t>(startSec) * AV_TIME_BASE;
+        if (avformat_seek_file(m_ctx_data.format_ctx.get(), -1, INT64_MIN, target, INT64_MAX, 0) < 0)
+            util::Log(color::red, "Failed to seek to track start at {}s\n", startSec);
+    }
+
     auto ConvertFmtToStr = [](AVSampleFormat fmt)
     {
         switch (fmt)

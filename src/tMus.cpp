@@ -42,18 +42,40 @@ static void SetupCallbacks(ListView& albumViewRef, ListView& songViewRef, Comman
         {
             // Client mode: `path` carries the albumId. Fetch its tracks from the
             // server and store each track's stream URL as the play target.
-            for (const auto& t : client->albumTracks(path.string()))
+            const auto remoteTracks = client->albumTracks(path.string());
+
+            // When every track of the album names the same artist, repeating it
+            // on each row is noise - the album view already identifies it.
+            const bool uniformArtist = not remoteTracks.empty()
+                and not remoteTracks.front().artist.empty()
+                and std::ranges::all_of(remoteTracks, [&](const RemoteTrack& t)
+                                        { return t.artist == remoteTracks.front().artist; });
+
+            for (const auto& t : remoteTracks)
             {
+                // Untagged files come back with empty title/artist; fall back to
+                // the file name so the row never collapses to a bare " - ".
+                std::string name;
+                if (not t.title.empty())
+                    name = (t.artist.empty() or uniformArtist)
+                         ? t.title
+                         : std::format("{} - {}", t.artist, t.title);
+                else if (not t.file_name.empty())
+                    name = t.file_name;
+                else
+                    name = std::format("Track {}", t.id);
+
                 std::string label = t.track_no
-                    ? std::format("{:02} {} - {}", *t.track_no, t.artist, t.title)
-                    : std::format("{} - {}", t.artist, t.title);
+                    ? std::format("{:02} {}", *t.track_no, name)
+                    : std::move(name);
 
                 unsigned cols = (unsigned)ncstrwidth(label.c_str(), nullptr, nullptr);
 
                 ListView::ItemType item;
-                item.first   = cols;
-                item.second  = t.stream_url; // avformat opens http:// directly
-                item.display = std::move(label);
+                item.first    = cols;
+                item.second   = t.stream_url; // avformat opens http:// directly
+                item.display  = std::move(label);
+                item.startSec = t.start_s.value_or(0);
                 songVec.push_back(std::move(item));
             }
             // Keep server order (track order); no local sort.
@@ -85,14 +107,15 @@ static void SetupCallbacks(ListView& albumViewRef, ListView& songViewRef, Comman
         return true;
     });
 
-    songViewRef.setEnterCallback([&](const std::filesystem::path& path)
+    songViewRef.setEnterCallback([&](const ListView::ItemType& item)
     {
         util::Log(color::moccasin, "song callback\n");
-        auto starter = [&cmdView, audio_path = path](std::stop_token tkn)
+        auto starter = [&cmdView, audio_path = item.second, title = item.display,
+                        startSec = item.startSec](std::stop_token tkn)
         {
             try
             {
-                AudioLoop loop{ audio_path };
+                AudioLoop loop{ audio_path, title, startSec };
                 loop.consumer_loop(tkn);
             }
             catch (const std::runtime_error& e)
